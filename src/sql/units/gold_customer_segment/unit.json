@@ -1,0 +1,7 @@
+{
+  "job": "gold_customer_segment",
+  "legacy_unit": "customer_segment",
+  "outputs": ["gold.mart_customer_segment"],
+  "owns": [],
+  "depends_on": ["silver_customer", "silver_dormant", "silver_transactions"]
+}

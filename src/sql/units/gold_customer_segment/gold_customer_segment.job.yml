@@ -1,0 +1,46 @@
+resources:
+  jobs:
+    gold_customer_segment:
+      name: ${var.job_name_prefix}gold_customer_segment
+      max_concurrent_runs: 1
+      parameters:
+        - name: drop
+          default: D0
+        - name: as_of_date
+          default: "2025-06-30"
+        - name: batch_id
+          default: "20250630"
+        - name: load_ts
+          default: "2025-06-30 23:00:00"
+      tags:
+        environment: ${bundle.target}
+        migration_unit: gold_customer_segment
+      tasks:
+        - task_key: build_mart_customer_segment
+          max_retries: 0
+          sql_task:
+            warehouse_id: ${var.warehouse_id}
+            file:
+              path: ./customer_segment.sql
+              source: WORKSPACE
+            parameters:
+              catalog: ${var.catalog}
+              silver_schema: ${var.silver_schema}
+              gold_schema: ${var.gold_schema}
+              as_of_date: "{{job.parameters.as_of_date}}"
+              batch_id: "{{job.parameters.batch_id}}"
+              load_ts: "{{job.parameters.load_ts}}"
+        - task_key: verify_mart_customer_segment
+          max_retries: 0
+          depends_on:
+            - task_key: build_mart_customer_segment
+          sql_task:
+            warehouse_id: ${var.warehouse_id}
+            file:
+              path: ./verify_customer_segment.sql
+              source: WORKSPACE
+            parameters:
+              catalog: ${var.catalog}
+              gold_schema: ${var.gold_schema}
+              golden_path: ${var.golden_path}
+              drop: "{{job.parameters.drop}}"
