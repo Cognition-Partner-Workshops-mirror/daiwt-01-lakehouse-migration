@@ -28,12 +28,12 @@ def run(*args, **kwargs):
     return run_parity(*args, contract=CONTRACT, **kwargs)
 
 
-def test_scaffold_is_empty():
+def test_unpromoted_capture_has_empty_contract():
     manifest = json.loads((ROOT / "golden/manifest.json").read_text())
     contract = json.loads((ROOT / "src/parity/contract.json").read_text())
-    assert manifest == {"drops": ["D0"], "files": []}
+    assert manifest["capture_mode"] == "snapshot"
     assert contract == {"outputs": []}
-    result = run_parity(client(manifest), "daiwt_01_mig_dev", "pr_1", "w", {},
+    result = run_parity(client(error=NotFound("staged, not promoted")), "daiwt_01_mig_dev", "pr_1", "w", {},
                         contract=contract)
     assert result["status"] == "PASS"
     assert result["goldens"] == result["compared"] == 0

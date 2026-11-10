@@ -34,11 +34,11 @@ The 20 source/control tables are:
 - `nvb_mart.mart_monthly_balance`
 - `nvb_mart.mart_product_profitability`
 
-Golden capture is pending. Its source of reconciliation controls will be
-`golden/compute_baselines.py` → `golden/expected/*.json` in the legacy repository.
-These JSON controls are not row-level CSV goldens; a future capture must define
-the CSV outputs and explicit target mapping before any unit can claim parity.
-No captured inputs, outputs, provenance, or skipped-branch claims are included.
+Goldens are a `snapshot` capture (`20261110T162154Z`) of the mocked estate: the legacy
+generator's delivery plus row-level outputs materialized by its Python reference controls
+(`golden/compute_baselines.py`), not a Teradata execution. They are staged at
+`/Volumes/daiwt_01_mig_prod/landing/golden/_staging/20261110T162154Z/`; see
+[golden/README.md](golden/README.md).
 
 
 ## Layout
@@ -95,7 +95,7 @@ The checked-in `src/parity/contract.json` pins every output path and SHA-256
 to its drop, producing unit, target table, kind, keys, row count and columns.
 Generate a future contract with `python src/parity/build_contract.py --units /path/to/units.yaml`.
 Table targets are cross-checked against explicit unit metadata; reports target
-`gold.report_<unit>`. The scaffold manifest and contract are empty; capture is pending.
+`gold.report_<unit>`. The contract is empty until the staged capture is promoted.
 See [capture contract](golden/README.md) for staging and promotion requirements.
 Runtime parity rejects missing/extra manifest output paths or differing hashes
 before comparing any units. Target names are never inferred from CSV filenames.
