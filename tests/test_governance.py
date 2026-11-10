@@ -63,7 +63,8 @@ def test_statement_forms(kind, form):
     args[5][('s', 'items')]['table_type'] = kind
     plan = governance.build_plan(*args)[0]
     sql = dict(plan['statements'])
-    assert sql['comment'].startswith(f'COMMENT ON {form} ')
+    comment_form = 'TABLE' if kind in ('MATERIALIZED_VIEW', 'STREAMING_TABLE') else form
+    assert sql['comment'].startswith(f'COMMENT ON {comment_form} ')
     assert sql['tags'].startswith(f'ALTER {form} ')
     assert sql['owner'].startswith(f'ALTER {form} ')
 
