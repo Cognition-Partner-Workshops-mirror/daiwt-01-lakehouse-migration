@@ -179,9 +179,10 @@ def test_manifest_matches_harness_layout(tmp_path):
         capture.verify(root, manifest)
 
 
-def test_capture_never_overwrites(tmp_path):
-    (tmp_path / "manifest.json").write_text("{}")
-    with pytest.raises(FileExistsError):
+@pytest.mark.parametrize("existing", ["manifest.json", "inputs", "outputs", "controls"])
+def test_capture_never_overwrites(tmp_path, existing):
+    (tmp_path / existing).mkdir()
+    with pytest.raises(FileExistsError, match=existing):
         capture.capture(tmp_path, "repo", "a" * 40, "2026-11-10T16:21:54Z")
 
 

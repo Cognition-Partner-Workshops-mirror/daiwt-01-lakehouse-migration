@@ -363,8 +363,9 @@ def verify(root, manifest):
 
 def capture(root, repo, commit, captured_at, s3_manifest=None):
     root = Path(root).resolve()
-    if (root / "manifest.json").exists():
-        raise FileExistsError(f"{root}/manifest.json exists; captures are never overwritten")
+    existing = [n for n in ("manifest.json", "inputs", "outputs", "controls") if (root / n).exists()]
+    if existing:
+        raise FileExistsError(f"{root} already holds {existing}; captures are never overwritten")
     legacy = root / "legacy"
     legacy_run = prepare_legacy(root, repo, commit)
     if s3_manifest is None:
