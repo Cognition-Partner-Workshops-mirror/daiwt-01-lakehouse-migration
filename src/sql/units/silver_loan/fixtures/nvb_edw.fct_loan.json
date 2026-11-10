@@ -1,0 +1,59 @@
+{
+  "collateral_type_cd_counts": {
+    "PROPERTY": 1800
+  },
+  "currency_cd_counts": {
+    "NOK": 1800
+  },
+  "dates": {
+    "effective_date": {
+      "max": "2024-01-01",
+      "min": "2024-01-01"
+    },
+    "expiry_date": {
+      "max": "9999-12-31",
+      "min": "9999-12-31"
+    },
+    "load_ts": {
+      "max": "2025-06-30 23:00:00",
+      "min": "2025-06-30 23:00:00"
+    }
+  },
+  "distinct": {
+    "account_id": 1800,
+    "batch_id": 1,
+    "loan_id": 1800
+  },
+  "input_rows": {
+    "nvb_edw.dim_account": 8000,
+    "nvb_edw.dim_branch": 8,
+    "nvb_edw.dim_calendar": 547,
+    "nvb_edw.dim_card": 6000,
+    "nvb_edw.dim_merchant": 80,
+    "nvb_edw.dim_product": 4,
+    "nvb_edw.fct_daily_balance": 4376000,
+    "nvb_edw.fct_loan": 1800,
+    "nvb_edw.fct_product_order": 3500,
+    "nvb_stg.customer_feed": 5100,
+    "nvb_stg.transaction_feed": 180000
+  },
+  "loan_status_cd_counts": {
+    "LIVE": 1800
+  },
+  "record_status_cd_counts": {
+    "A": 1800
+  },
+  "repayment_frequency_cd_counts": {
+    "MONTHLY": 1800
+  },
+  "rows": 1800,
+  "src_system_cd_counts": {
+    "COREBANK": 1800
+  },
+  "sums": {
+    "arrears_days": 46430.0,
+    "contractual_rate": 9450.0,
+    "outstanding": 4139075137.4
+  },
+  "table": "nvb_edw.fct_loan"
+}
