@@ -156,7 +156,7 @@ as diagnostic evidence. Builder verification runs the selected units and checks 
 | Workflow | Trigger and behavior |
 | --- | --- |
 | `pr.yml` | PRs to `main` or `pre-migration`; offline tests, strict dev and prod validation (no deploy), fail-closed pushed-head attestation check and sticky comment |
-| `deploy-prod.yml` | Push to `main` or manual; strict prod validation, bundle deployment, all registered production units and prod parity |
+| `deploy-prod.yml` | Push to `main` or manual; strict prod validation, bundle deployment, `nvb_nightly` replay for each manifest drop (governance last), then strict prod parity and attestation |
 | `reset.yml` | Manual `target=dev|prod`; runs only if `confirm` exactly matches target |
 | `dev-sweep.yml` | Manual; removes dev PR deployments for closed PRs, or a specified suffix |
 
