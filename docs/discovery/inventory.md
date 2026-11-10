@@ -284,6 +284,6 @@ Note: the contract places `close_batch` (silver.etl_batch_control) in silver, bu
 
 ## 10. Migration-repo state
 
-- `src/sql/units/registry.json` is `{}` (*migration repo* `docs/registry.md:3`); entries need `job`, `outputs`, `owns`, `depends_on` (`docs/registry.md:4-6`).
+- The unit registry is one `src/sql/units/<unit>/unit.json` per unit directory, with the keys `job`, `legacy_unit`, `outputs`, `owns`, `depends_on` (*migration repo* `docs/registry.md`). No estate units are registered yet; only the foundation units are.
 - `databricks.yml`: dev catalog `daiwt_01_mig_dev` with `bronze_/silver_/gold_${schema_suffix}`; prod `daiwt_01_mig_prod` with unsuffixed schemas; `golden_path /Volumes/daiwt_01_mig_prod/landing/golden`; warehouse `6dc4b80538621b7b`.
 - Golden volume: `manifest.json` (54 file entries), `PROVENANCE.json`, `skipped_branches.json` (control-failure, register_batch and export branches not materialized), `inputs/D0` (11 tables, CSV + parquet + `_manifest.json`), `outputs/D0/<unit>/<table>.csv` (10), `controls/D0/{expected,summary.csv}`.

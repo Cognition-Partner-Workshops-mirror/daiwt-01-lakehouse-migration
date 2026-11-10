@@ -37,7 +37,7 @@ Conventions that apply to every unit:
 ### orchestration (platform)
 - One job `${var.job_name_prefix}nvb_nightly` with `run_job_task` per unit in the legacy linear order. Separately, the registry `depends_on` captures the narrower data dependencies ([orchestration §2](orchestration_mapping.md#2-target-one-lakeflow-job-dag)).
 - `max_concurrent_runs: 1` with queueing and `max_retries: 0`, mirroring the `nvb_nightly_exclusive` lock and the runbook's "restart from upstream" rule.
-- Do not add the job to `registry.json`. `ci/run_units.py` would run every unit a second time.
+- Do not register the job as a unit (no `src/sql/units/<unit>/unit.json`). `ci/run_units.py` runs every registered unit, so registering it would run every unit a second time.
 - Europe/Oslo schedule, `PAUSED` in dev. Use job health `RUN_DURATION_SECONDS` rules for the 03:00 release SLA and the per-job SLAs. Keep `concurrency: cancel-in-progress: false` in every workflow.
 - `batch_open` and `batch_fail` tasks own the OPEN/RUNNING/FAILED transitions of `silver.etl_batch_control`. Only `close_batch` sets `COMPLETE`.
 

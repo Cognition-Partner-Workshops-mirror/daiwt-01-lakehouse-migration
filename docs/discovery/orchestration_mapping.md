@@ -194,7 +194,7 @@ Every BTEQ validation `SELECT` prints offending keys then branches to `rejected`
 - Permissions: prod top-level `users CAN_VIEW` + deployer `CAN_MANAGE` (`M:databricks.yml:48-52`); dev has no `permissions` block (`:24-45`). Reference adds the same block to dev (`R:databricks.yml:37-42`).
 
 ### Design / inference
-- `nvb_nightly` is **not** in `registry.json`: registered entries are executed by `run_units.py`, so registering it would execute every unit twice. Its file (e.g. `resources/nvb_nightly.job.yml`) matches no unit, so changing it selects all units (`classify_changes.py:28-29`) — the right blast radius for a DAG change.
+- `nvb_nightly` is **not** a registered unit (no `unit.json`): registered entries are executed by `run_units.py`, so registering it would execute every unit twice. Its file (e.g. `resources/nvb_nightly.job.yml`) matches no unit, so changing it selects all units (`classify_changes.py:28-29`) — the right blast radius for a DAG change.
 - Unit job keys = contract unit names (`customer` … `close_batch`) plus platform keys `bronze_landing`, `sql_macros`, `governance`, each named `${var.job_name_prefix}<key>`; `nvb_nightly` references them as `${resources.jobs.<key>.id}`.
 - Because Wave 2/3 builders land units in parallel, a hand-edited DAG file is a merge hotspot and `bundle validate` fails if it references a job that does not exist yet. Recommendation: generate `nvb_nightly` tasks from `registry.json` (Python-for-DABs, as the reference does for its silver pipeline) using the fixed legacy order in 2.1 and skipping unregistered units; or land it after Wave 3.
 - `databricks.yml` has no `include:` yet (`M:databricks.yml:1-61`); the orchestration unit adds it.
