@@ -5,11 +5,14 @@ import hashlib
 import io
 import json
 import re
+import sys
 import time
 from pathlib import Path
 
 GOLDEN_PATH = "/Volumes/daiwt_01_mig_prod/landing/golden"
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(globals().get("__file__", sys.argv[0])).resolve().parents[2]
+sys.path.insert(0, str(ROOT / 'ci'))
+from registry import load, validate
 IDENTIFIER = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 
@@ -110,13 +113,13 @@ def compare(manifest, registry, read_golden, read_actual, ran_units=None):
         if table in seen:
             raise ValueError(f"Duplicate golden: {table}")
         seen.add(table)
-        unit = entry["unit"]
-        if unit not in registry:
+        unit = producers.get(table)
+        if unit is None:
             results.append({"table": table, "status": "SKIP", "reason": "not yet migrated"})
             continue
         if ran_units is not None and unit not in ran_units:
             results.append({"table": table, "unit": unit, "status": "SKIP",
-                            "reason": "not run in this verification"})
+                            "reason": "not selected"})
             continue
         try:
             golden = read_golden(entry)
@@ -195,7 +198,10 @@ class GoldenStore:
         return rows
 
 
-def run(client, catalog, suffix, warehouse_id, registry, drop="D0", *, contract=None, ran_units=None):
+def run(client, catalog, suffix, warehouse_id, registry, drop="D0", *, contract=None, ran_units=None,
+        layer=None):
+    if layer not in (None, "silver", "gold"):
+        raise ValueError("Unsupported parity layer")
     if catalog not in ("daiwt_01_mig_dev", "daiwt_01_mig_prod"):
         raise ValueError("Unsupported catalog")
     identifier(suffix)
@@ -211,10 +217,10 @@ def run(client, catalog, suffix, warehouse_id, registry, drop="D0", *, contract=
         return warehouse.sql(f"SELECT {columns} FROM {identifier(catalog)}.{identifier(schema)}.{identifier(table)}")
 
     contract = contract if contract is not None else json.loads((ROOT / "src/parity/contract.json").read_text())
-    unknown = set(registry) - {entry["unit"] for entry in contract["outputs"]}
-    if unknown:
-        raise ValueError("registered units absent from parity contract: " + ", ".join(sorted(unknown)))
+    validate(registry, contract)
     entries = contract_entries(contract, store.manifest(), drop)
+    if layer is not None:
+        entries = [entry for entry in entries if entry["table"].startswith(layer + ".")]
     result = compare({"tables": entries}, registry, store.rows, actual,
                      ran_units if catalog.endswith("_dev") else None)
     for row in result["results"]:
@@ -229,9 +235,11 @@ def main():
     parser.add_argument("--catalog", default="daiwt_01_mig_dev")
     parser.add_argument("--suffix", default="pr_1")
     parser.add_argument("--drop", default="D0")
-    parser.add_argument("--ran-units", type=Path)
+    parser.add_argument("--units", "--ran-units", dest="ran_units", type=Path)
     parser.add_argument("--warehouse-id", default="6dc4b80538621b7b")
     parser.add_argument("--profile")
+    parser.add_argument("--selected-units", default="*")
+    parser.add_argument("--layer", choices=("silver", "gold"))
     parser.add_argument("--output", default="out/parity.json")
     args = parser.parse_args()
     output = Path(args.output)
@@ -240,13 +248,15 @@ def main():
     try:
         from databricks.sdk import WorkspaceClient
         client = WorkspaceClient(profile=args.profile)
-        registry = json.loads((ROOT / "src/sql/units/registry.json").read_text())
+        registry = load(ROOT)
         ran_units = json.loads(args.ran_units.read_text()) if args.ran_units else None
+        if args.selected_units != "*":
+            ran_units = args.selected_units.split(":") if args.selected_units else []
         if ran_units is not None and (not isinstance(ran_units, list)
                                       or not all(isinstance(unit, str) for unit in ran_units)):
             raise ValueError("ran units must be a list of unit names")
         result = run(client, args.catalog, args.suffix, args.warehouse_id, registry, args.drop,
-                     ran_units=ran_units)
+                     ran_units=ran_units, layer=args.layer)
     except Exception as exc:
         result = {"status": "FAIL", "drop": args.drop, "goldens": 0, "results": [],
                   "counts": {"PASS": 0, "FAIL": 0, "SKIP": 0}, "compared": 0, "error": str(exc)}
@@ -259,4 +269,6 @@ def main():
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    exit_code = main()
+    if exit_code:
+        raise SystemExit(exit_code)

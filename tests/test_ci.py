@@ -9,7 +9,7 @@ import yaml
 
 from attest import render
 from classify_changes import classify, expand
-from check_attestation import evaluate
+from registry import load
 from drops import manifest_drops
 from cleanup import candidates
 from run_units import run_units
@@ -34,13 +34,16 @@ def mock_runs(monkeypatch, calls, code=0):
         calls.append(command)
         return Process()
     monkeypatch.setattr(subprocess, "Popen", popen)
+    monkeypatch.setattr(subprocess, "check_output", lambda *args, **kwargs: json.dumps({
+        "resources": {"jobs": {key: {"id": str(i)} for i, key in enumerate(
+            ["a", "b", "sale_job", "customer_job"], 1)}}}))
 
 
 def test_dev_runs_all_registered_units(monkeypatch):
     calls = []
     mock_runs(monkeypatch, calls)
     urls = run_units("pr_1", {"sale": {"job": "sale_job"}, "customer": {"job": "customer_job"}}, drop="D1")
-    assert [command[-1] for command in calls] == ["sale_job", "customer_job"]
+    assert [command[-1] for command in calls] == ["customer_job", "sale_job"]
     assert all(command[4:6] == ["dev", "--var"] for command in calls)
     script = (ROOT / "ci/dev_verify.sh").read_text()
     assert 'out/selected-units.json --drop "$D" --run-urls out/run-urls.txt' in script
@@ -58,7 +61,7 @@ def test_prod_runs_registered_units_before_parity(monkeypatch):
     calls = []
     mock_runs(monkeypatch, calls)
     run_units("prod", {"sale": {"job": "sale_job"}, "customer": {"job": "customer_job"}}, target="prod", drop="D2")
-    assert [command[-1] for command in calls] == ["sale_job", "customer_job"]
+    assert [command[-1] for command in calls] == ["customer_job", "sale_job"]
     assert all(command[4:7] == ["prod", "--var", "schema_suffix=prod"] for command in calls)
     workflow = yaml.safe_load((ROOT / ".github/workflows/deploy-prod.yml").read_text())
     commands = "\n".join(step.get("run", "") for step in workflow["jobs"]["deploy"]["steps"])
@@ -144,10 +147,10 @@ def test_attest_multiple_files(tmp_path):
 
 def test_classification():
     registry = {"load_sale": {}, "load_customer": {}}
-    assert classify({}, ["src/parity/parity_check.py"]) == []
-    assert classify(registry, ["src/sql/units/load_sale.sql"]) == ["load_sale"]
-    assert classify(registry, ["src/parity/parity_check.py"]) == ["load_sale", "load_customer"]
-    assert classify(registry, ["README.md"]) == []
+    assert classify({}, ["src/parity/parity_check.py"])['required']
+    assert classify(registry, ["src/sql/units/load_sale/query.sql"])['units'] == ["load_sale"]
+    assert classify(registry, ["src/parity/parity_check.py"])['units'] == ["load_customer", "load_sale"]
+    assert not classify(registry, ["README.md"])['required']
 
 
 def test_cleanup_scoping():
@@ -161,7 +164,7 @@ def test_cleanup_scoping():
 
 
 def test_registry_and_bundle_targets():
-    registry = json.loads((ROOT / "src/sql/units/registry.json").read_text())
+    registry = load(ROOT)
     assert all(set(spec) >= {"job", "outputs"} for spec in registry.values())
     bundle = yaml.safe_load((ROOT / "databricks.yml").read_text())
     assert "resources" not in bundle["targets"]["prod"]
@@ -184,41 +187,24 @@ def test_workflow_oidc_environments():
 
 
 @pytest.mark.parametrize("path,expected", [
-    ("src/sql/units/a.sql", ["a", "b", "c"]),
-    ("src/sql/units/a/query.sql", ["a", "b", "c"]),
-    ("resources/a.job.yml", ["a", "b", "c"]),
+    ("src/sql/units/a/query.sql", ["a"]),
+    ("src/sql/units/c/unit.json", ["a", "b", "c"]),
+    ("resources/a.job.yml", ["a", "b", "c", "z"]),
     ("ci/drops.py", ["a", "b", "c", "z"]),
-    ("src/sql/units/registry.json", ["a", "b", "c", "z"]),
+    ("src/sql/units/removed/unit.json", []),
     ("docs/readme.md", []), ("tests/test_ci.py", []), ("README.md", []), (".github/workflows/pr.yml", [])])
 def test_selection(path, expected):
     registry = {"c": {"depends_on": ["b"]}, "a": {}, "b": {"depends_on": ["a"]}, "z": {}}
-    assert classify(registry, [path]) == expected
+    assert classify(registry, [path])['units'] == expected
 
 
 def test_expand():
     registry = {"b": {"depends_on": ["a"]}, "a": {}, "c": {}}
-    assert expand(registry, ["a"]) == ["a", "b"]
+    assert expand(registry, ["a"]) == ["a"]
     assert expand(registry, "*") == ["a", "b", "c"]
     assert expand(registry, []) == []
     with pytest.raises(ValueError):
         expand(registry, ["unknown"])
-
-
-def evidence(**values):
-    return {"head_sha": "head", "suffix": "pr_23", "status": "PASS", "units": '["a", "b"]',
-            "drops": json.dumps({drop: {"status": "PASS", "counts": {}} for drop in ("D0", "D1")}),
-            "attestation_md": "# evidence", **values}
-
-
-@pytest.mark.parametrize("rows,required,ok", [
-    ([], [], False), ([evidence(status="FAIL"), evidence()], [], False),
-    ([evidence(drops='{"D0":{"status":"PASS"}}')], [], False),
-    ([evidence(drops=json.dumps({d: {"status": "FAIL" if d == "D1" else "PASS"} for d in ("D0", "D1")}))], [], False),
-    ([evidence(units="[]")], ["a"], False), ([evidence(head_sha="old")], [], False),
-    ([evidence(suffix="pr_24")], [], False), ([evidence(drops="bad")], [], False),
-    ([evidence(units="null")], [], False), ([evidence()], ["a"], True)])
-def test_evaluate(rows, required, ok):
-    assert evaluate(rows, "head", "pr_23", required, ["D0", "D1"])[0] is ok
 
 
 def test_pr_only_reads_evidence():

@@ -24,6 +24,8 @@ jobs:
           python-version: "3.11"
       - run: pip install -r requirements-dev.txt
       - uses: databricks/setup-cli@main
+        with:
+          version: 1.25.0
       - run: databricks bundle validate --strict -t prod
       - run: databricks bundle deploy -t prod
       - name: Replay production drops
@@ -34,6 +36,7 @@ jobs:
           test "${#drops[@]}" -gt 0
           for drop in "${drops[@]}"; do
             python ci/run_units.py prod --target prod --drop "$drop"
+            databricks bundle run -t prod verification --params "drop=$drop"
             python src/parity/parity_check.py --catalog daiwt_01_mig_prod --suffix prod --drop "$drop" --output "out/parity-$drop.json"
           done
       - name: Render attestation
