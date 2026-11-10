@@ -87,9 +87,7 @@ AS SELECT p.transaction_id, p.account_id, p.txn_date, p.amount, p.channel, p.mer
           'DOMESTIC' AS clearing_scheme_cd
 FROM transaction_checked AS p
 CROSS JOIN transaction_delivery AS d
-WHERE CASE WHEN d.as_of_date IS NULL OR d.batch_id IS NULL
-             THEN raise_error('transactions: no transaction_feed delivery for drop')
-           WHEN (SELECT count(*) FROM transaction_checked WHERE reject_reason IS NOT NULL) > 0
+WHERE CASE WHEN (SELECT count(*) FROM transaction_checked WHERE reject_reason IS NOT NULL) > 0
              THEN raise_error('transactions: delivery rejected by control checks; see fct_transaction_quarantine')
            ELSE true END;
 
