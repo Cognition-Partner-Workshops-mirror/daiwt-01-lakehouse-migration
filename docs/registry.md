@@ -79,3 +79,47 @@ fails closed with a builder command. Selections without golden outputs skip
 immediately without querying Unity Catalog.
 The row also stores head SHA, suffix, status, drops, Markdown, run URLs, identity
 and timestamp. Cleanup uses both ownership lists; landing is never a target.
+
+## Nightly wrapper
+
+`nightly_resources:load_resources` creates `nvb_nightly`, not a registry unit.
+It reuses `registry.topo_order` and `run_units.execution_jobs` to collapse shared
+Silver jobs. Each execution job runs once with the wrapper's `drop` parameter.
+Registry edges are augmented by the legacy customer-to-close-batch order;
+missing steps are linked over. An incompatible collapsed job DAG fails validation.
+Foundation jobs precede other execution jobs. A registered `governance` job
+depends on every non-failure task and runs with `NONE_FAILED`.
+
+`batch_open` always precedes the foundation. It creates the exact contract
+column list for `silver.etl_batch_control` (CHAR/VARCHAR become STRING), rejects
+an already RUNNING batch, and opens the manifest-selected date/batch. A separate
+`silver.nightly_run_state` records admission so a rejected run's failure handler
+cannot overwrite the existing RUNNING batch. Initial window/effective dates are
+left unset for the close-batch producer to populate; no new delivery date literals
+are introduced. The contract excludes `load_ts`, so neither this table's DDL nor
+the release report invents that excluded field.
+
+`release_export` and `reconcile` require registered producers for both
+`silver.etl_batch_control` and `silver.fct_transaction`. They persist the two
+legacy control-report rows in `silver.nightly_control_report`, keyed by parent
+run ID, remove reports older than 400 days, and raise on disagreement with the
+COMPLETE batch and current transaction aggregates. These two auxiliary tables
+are framework-owned, not golden outputs; they are not added to the unit registry.
+Table rows replace the legacy text exports; no landing-volume writes are made.
+
+`nightly_resources.VIEWS` declares the inputs of each of the three legacy views
+and four reports. Registered `outputs` **and** `owns` identify producers, since
+typed Silver dimensions have no golden output. A view task is omitted until all
+its producers exist; report-on-view dependencies are explicit. When reconciliation
+is available, every view waits for it. SQL templates in `src/orchestration/views/`
+are passed to `create_view.sql`; it safely quotes schema identifiers and inserts
+the validated manifest business date into persistent view DDL. No parameter marker
+is stored in a view body. The channel window starts at the retained calendar's
+minimum date and the finance report uses the delivery's year.
+
+`batch_fail` depends on every other task with `AT_LEAST_ONE_FAILED`, identifies
+the first failed task through the parent Jobs run, and marks an admitted batch
+FAILED with that task key in `last_step_cd`. The Lakeflow run remains failed.
+The schedule is paused by default (`nightly_pause_status`) and by the dev preset;
+only explicit cutover approval should enable it. Foundation-only runs deliberately
+cannot produce a COMPLETE batch: that belongs to the close-batch unit.
