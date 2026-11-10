@@ -132,7 +132,7 @@ def mismatches(plan, tables, tags, columns, exemptions=()):
     key = (plan['schema'], plan['name'])
     row = tables[key]
     expected = {'comment': (row['comment'], plan['comment'])}
-    if plan['owner']:
+    if plan['owner'] and not plan['pipeline']:
         expected['owner'] = (row['table_owner'], plan['owner'])
     expected.update({'column:' + name: (columns.get(key, {}).get(name), value)
                      for name, value in plan['columns'].items()})

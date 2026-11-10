@@ -293,3 +293,11 @@ def test_notebook_flow_and_check_failures(monkeypatch, action, broken):
         assert ('APPLIED' if action == 'apply' else 'PASS') in saved['summary']
     if action == 'check':
         assert queries == []
+
+
+def test_pipeline_owner_not_checked():
+    plan = dict(schema='s', name='mv', comment='c', owner='team', pipeline=True, columns={}, tags={})
+    tables = {('s', 'mv'): dict(comment='c', table_owner='pipeline-runner')}
+    assert governance.mismatches(plan, tables, {}, {}) == []
+    plan['pipeline'] = False
+    assert governance.mismatches(plan, tables, {}, {}) == ['owner']
