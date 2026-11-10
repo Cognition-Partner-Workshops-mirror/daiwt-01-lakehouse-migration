@@ -146,6 +146,7 @@ def test_full_checker_combines_output_and_control_evidence(monkeypatch):
 
 def test_visible_task_exits_nonzero_and_writes_failure_evidence(monkeypatch, tmp_path):
     output = tmp_path / 'result.json'
+    monkeypatch.setattr('databricks.sdk.WorkspaceClient', lambda: object())
     monkeypatch.setattr(sys, 'argv', ['full_job_check.py', '--suffix', 'pr_42', '--output', str(output)])
     monkeypatch.setattr(checker, 'run', lambda *a: (_ for _ in ()).throw(RuntimeError('control mismatch')))
     assert checker.main() == 1
