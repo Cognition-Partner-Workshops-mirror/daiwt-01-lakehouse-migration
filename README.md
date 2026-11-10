@@ -135,7 +135,7 @@ Registered outputs report PASS only for exact row-count and content matches.
 
 1. Add `src/sql/units/<unit>.sql` and its bundle job resource, included from
    `databricks.yml`. Pass catalog and layer schema variables to the job, and name it
-   `${var.job_name_prefix}<unit>` (dev `[pr_<n>] <unit>`, prod `<unit>`).
+   `${var.job_name_prefix}<unit>` (dev `[pr_<n>] <unit>`, prod `daiwt_01_<unit>`).
 2. Register the bundle job key and all produced golden tables:
 
    ```json
