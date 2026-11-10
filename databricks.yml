@@ -5,12 +5,16 @@ bundle:
 python:
   resources:
     - 'silver_resources:load_resources'
+    - 'nightly_resources:load_resources'
   mutators:
     - 'silver_resources:configure_silver_job'
 
 include: [src/sql/units/*/*.yml, ci/*.job.yml]
 
 variables:
+  nightly_pause_status:
+    description: Keep the nightly schedule paused until cutover is approved.
+    default: PAUSED
   silver_bad_rows:
     description: Dev-only synthetic quarantine rows; never enable in production.
     default: "false"
@@ -73,7 +77,7 @@ targets:
       catalog: daiwt_01_mig_prod
       silver_bad_rows: "false"
       schema_suffix: prod
-      job_name_prefix: ""
+      job_name_prefix: "daiwt_01_"
       bronze_schema: bronze
       silver_schema: silver
       gold_schema: gold

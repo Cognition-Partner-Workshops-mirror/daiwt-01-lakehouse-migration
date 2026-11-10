@@ -5,6 +5,22 @@ SQL-unit migration scaffold for the DAIWT-01 Databricks medallion target:
 Foundation units are added in subsequent steps. Registry entries are discovered from
 `src/sql/units/<unit>/unit.json`; there is no shared registry file.
 
+## Nightly orchestration
+
+`nightly_resources.py` generates the `nvb_nightly` Lakeflow wrapper from that
+registry. Builders are picked up automatically; Silver entities share one
+`silver_pipeline` invocation. Registry dependencies and the retained legacy
+step order both gate execution. This wrapper has no `unit.json` and is not run
+by `ci/run_units.py` or the production verification chain.
+
+The schedule is 00:30 Europe/Oslo, queued with concurrency one, and defaults to
+`nightly_pause_status=PAUSED` pending cutover approval. `drop` defaults to D0;
+business date and batch ID come from `golden/manifest.json`. Re-homed SQL tasks
+under `src/orchestration/` appear only when their table producers are registered.
+See [registry documentation](docs/registry.md#nightly-wrapper) for controls and
+conditional inclusion. Do not enable the foundation-only schedule: only the
+future close-batch producer can complete the batch opened by this wrapper.
+
 ## Source estate
 
 [Cognition-Partner-Workshops-mirror/daiwt-01-teradata-warehouse](https://github.com/Cognition-Partner-Workshops-mirror/daiwt-01-teradata-warehouse)
@@ -119,7 +135,7 @@ Registered outputs report PASS only for exact row-count and content matches.
 
 1. Add `src/sql/units/<unit>.sql` and its bundle job resource, included from
    `databricks.yml`. Pass catalog and layer schema variables to the job, and name it
-   `${var.job_name_prefix}<unit>` (dev `[pr_<n>] <unit>`, prod `<unit>`).
+   `${var.job_name_prefix}<unit>` (dev `[pr_<n>] <unit>`, prod `daiwt_01_<unit>`).
 2. Register the bundle job key and all produced golden tables:
 
    ```json
