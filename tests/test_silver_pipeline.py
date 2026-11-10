@@ -44,6 +44,9 @@ def test_entity_adds_refresh_and_named_drop(tmp_path):
     job = module.configure_silver_job.function(None, Job.from_dict(template)).as_dict()
     assert job['max_concurrent_runs'] == 1
     tasks = {task['task_key']: task for task in job['tasks']}
+    python_file = tasks['verify_silver']['spark_python_task']['python_file']
+    assert python_file == 'src/parity/parity_check.py'
+    assert not Path(python_file).is_absolute()
     refresh = tasks['refresh_silver']['pipeline_task']
     assert refresh == dict(pipeline_id='${resources.pipelines.silver.id}', full_refresh=True,
                            parameters={'drop': '{{job.parameters.drop}}'})

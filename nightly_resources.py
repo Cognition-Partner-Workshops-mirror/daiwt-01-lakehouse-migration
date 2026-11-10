@@ -68,7 +68,7 @@ def build_job(registry, manifest, contract, root=ROOT):
     def sql_task(key, filename, needs=(), extra=None):
         tasks[key] = dict(task_key=key, max_retries=0, sql_task=dict(
             warehouse_id='${var.warehouse_id}', file=dict(
-                path=str(Path(root) / 'src/orchestration' / filename), source='WORKSPACE'),
+                path='src/orchestration/' + filename),
             parameters={**parameters, **(extra or {})}))
         dependencies[key] = set(needs)
 
@@ -116,8 +116,8 @@ def build_job(registry, manifest, contract, root=ROOT):
         tasks['governance']['run_if'] = 'NONE_FAILED'
     tasks['batch_fail'] = dict(task_key='batch_fail', max_retries=0,
                               run_if='AT_LEAST_ONE_FAILED', notebook_task=dict(
-                                  notebook_path=str(Path(root) / 'src/orchestration/batch_fail.py'),
-                                  source='WORKSPACE', base_parameters=parameters))
+                                  notebook_path='src/orchestration/batch_fail.py',
+                                  base_parameters=parameters))
     dependencies['batch_fail'] = set(tasks) - {'batch_fail'}
     topo_order({key: {'depends_on': sorted(value)} for key, value in dependencies.items()}, dependencies)
     for key, task in tasks.items():

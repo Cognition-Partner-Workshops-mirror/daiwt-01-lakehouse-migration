@@ -159,6 +159,20 @@ def test_settings_metadata_and_resource_loading():
     assert json.loads(params['manifest_drops'])['D7']['batch_id'] == 20300101
 
 
+def test_generated_paths_are_bundle_relative():
+    for task in nightly.build_job(full_registry(), MANIFEST, CONTRACT)['tasks']:
+        if 'sql_task' in task:
+            file = task['sql_task']['file']
+            assert not Path(file['path']).is_absolute()
+            assert (ROOT / file['path']).is_file()
+            assert 'source' not in file
+        if 'notebook_task' in task:
+            notebook = task['notebook_task']
+            assert not Path(notebook['notebook_path']).is_absolute()
+            assert (ROOT / notebook['notebook_path']).is_file()
+            assert 'source' not in notebook
+
+
 def test_contract_columns_exact_order_and_no_extra_load_timestamp():
     with pytest.raises(ValueError, match='Missing batch-control contract'):
         nightly.control_columns({'outputs': []})
