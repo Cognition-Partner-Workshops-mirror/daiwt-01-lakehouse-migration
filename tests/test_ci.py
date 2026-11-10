@@ -57,17 +57,29 @@ def test_run_units_empty(monkeypatch, target, suffix):
     assert run_units(suffix, {}, target=target, drop="D0") == []
 
 
-def test_prod_runs_registered_units_before_parity(monkeypatch):
+def test_prod_run_units_helper(monkeypatch):
     calls = []
     mock_runs(monkeypatch, calls)
     run_units("prod", {"sale": {"job": "sale_job"}, "customer": {"job": "customer_job"}}, target="prod", drop="D2")
     assert [command[-1] for command in calls] == ["customer_job", "sale_job"]
     assert all(command[4:7] == ["prod", "--var", "schema_suffix=prod"] for command in calls)
+
+
+def test_prod_replays_nightly_before_parity_and_attestation():
     workflow = yaml.safe_load((ROOT / ".github/workflows/deploy-prod.yml").read_text())
-    commands = "\n".join(step.get("run", "") for step in workflow["jobs"]["deploy"]["steps"])
+    steps = workflow["jobs"]["deploy"]["steps"]
+    replay = next(step for step in steps if step.get("name") == "Replay production drops")
+    assert 'mapfile -t drops < <(python ci/drops.py)' in replay["run"]
+    assert 'for drop in "${drops[@]}"; do' in replay["run"]
+    assert 'databricks bundle run -t prod nvb_nightly --params "drop=$drop"' in replay["run"]
+    assert "run_units.py" not in replay["run"]
+    assert workflow["concurrency"]["cancel-in-progress"] is False
+    commands = "\n".join(step.get("run", "") for step in steps)
     positions = [commands.index("databricks bundle deploy -t prod"),
-                 commands.index('python ci/run_units.py prod --target prod --drop "$drop"'),
-                 commands.index('python src/parity/parity_check.py --catalog daiwt_01_mig_prod --suffix prod --drop "$drop"')]
+                 commands.index('databricks bundle run -t prod nvb_nightly --params "drop=$drop"'),
+                 commands.index('databricks bundle run -t prod verification --params "drop=$drop"'),
+                 commands.index('python src/parity/parity_check.py --catalog daiwt_01_mig_prod --suffix prod --drop "$drop"'),
+                 commands.index('python ci/attest.py "${files[@]}"')]
     assert positions == sorted(positions)
 
 
