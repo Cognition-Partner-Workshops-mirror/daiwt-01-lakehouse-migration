@@ -57,6 +57,38 @@ def test_missing_supporting_table_owner_rejects_omitted_publish_gates():
         checker.require_complete_registry(registry, CONTRACT)
 
 
+def test_readiness_accepts_registered_view_publisher_instead_of_framework_tasks():
+    registry = complete_registry()
+    registry['views'] = dict(job='views', legacy_unit='foundation', outputs=[],
+                             owns=['gold.' + name for name in VIEWS], depends_on=[])
+    checker.require_complete_registry(registry, CONTRACT)
+
+
+def test_readiness_rejects_duplicate_view_publishers(monkeypatch):
+    registry = complete_registry()
+    registry['views'] = dict(job='views', legacy_unit='foundation', outputs=[],
+                             owns=['gold.v_credit_risk'], depends_on=[])
+    build_job = checker.build_job
+
+    def duplicate_publisher(*args, **kwargs):
+        job = build_job(*args, **kwargs)
+        job['tasks'].append(dict(task_key='v_credit_risk'))
+        return job
+
+    monkeypatch.setattr(checker, 'build_job', duplicate_publisher)
+    with pytest.raises(ValueError, match='multiple publishers for v_credit_risk'):
+        checker.require_complete_registry(registry, CONTRACT)
+
+
+def test_readiness_rejects_two_registered_owners_of_a_view():
+    registry = complete_registry()
+    for name in ('first', 'second'):
+        registry[name] = dict(job=name, legacy_unit='foundation', outputs=[],
+                              owns=['gold.v_credit_risk'], depends_on=[])
+    with pytest.raises(ValueError, match='owned by both'):
+        checker.require_complete_registry(registry, CONTRACT)
+
+
 def controls_fixture():
     files, data = [], {}
     baseline = dict(rows=2, input_rows={'nvb_edw.source': 2}, distinct={'id': 2}, sums={'amount': 3.5},

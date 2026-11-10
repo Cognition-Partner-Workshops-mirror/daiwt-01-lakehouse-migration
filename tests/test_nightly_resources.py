@@ -152,6 +152,38 @@ def test_conditional_controls_and_views_require_every_producer():
     assert not {'release_export', 'reconcile'}.intersection(tasks(registry))
 
 
+@pytest.mark.parametrize('field', ['owns', 'outputs'])
+def test_registered_view_owner_replaces_framework_publisher_and_dependencies(field):
+    registry = full_registry()
+    registry['view_owner'] = unit('view_owner', **{field: ['gold.v_credit_risk']})
+    registry['governance'] = unit('governance')
+    generated = tasks(registry)
+    assert 'v_credit_risk' not in generated
+    assert 'view_owner' in deps(generated['report_risk_arrears'])
+    assert 'v_credit_risk' not in deps(generated['report_risk_arrears'])
+    assert set(nightly.VIEWS) - {'v_credit_risk'} <= set(generated)
+    assert deps(generated['governance']) == set(generated) - {'governance', 'batch_fail'}
+    assert generated['governance']['run_if'] == 'NONE_FAILED'
+
+
+def test_unowned_views_keep_one_framework_publisher():
+    generated = tasks(full_registry())
+    for name in nightly.VIEWS:
+        assert generated[name]['sql_task']['parameters']['view_sql'].startswith(
+            'CREATE OR REPLACE VIEW {gold}.' + name)
+    assert 'v_credit_risk' in deps(generated['report_risk_arrears'])
+
+
+def test_real_registry_has_one_registered_business_view_publisher():
+    registry = load(ROOT)
+    generated = tasks(registry)
+    assert not set(nightly.VIEWS) & set(generated)
+    for name in nightly.VIEWS:
+        assert [spec['job'] for spec in registry.values()
+                if 'gold.' + name in spec['owns'] + spec['outputs']] == ['gold_business_views']
+    assert 'gold_business_views' in deps(generated['governance'])
+
+
 def test_registered_view_reads_match_declared_requirements():
     for name, requirements in nightly.VIEWS.items():
         sql = (ROOT / 'src/orchestration/views' / f'{name}.sql').read_text()

@@ -28,9 +28,16 @@ def require_complete_registry(registry, contract):
         raise ValueError('Full job requires governance')
     manifest = json.loads((ROOT / 'golden/manifest.json').read_text())
     job = build_job(registry, manifest, contract, root=ROOT)
-    required_tasks = {'release_export', 'reconcile'} | {
-        path.stem for path in (ROOT / 'src/orchestration/views').glob('*.sql')}
-    missing_tasks = required_tasks - {task['task_key'] for task in job['tasks']}
+    task_keys = {task['task_key'] for task in job['tasks']}
+    missing_tasks = {'release_export', 'reconcile'} - task_keys
+    for path in sorted((ROOT / 'src/orchestration/views').glob('*.sql')):
+        owners = {spec['job'] for spec in registry.values()
+                  if 'gold.' + path.stem in spec['outputs'] + spec['owns']}
+        publishers = ({path.stem} | owners) & task_keys
+        if not publishers:
+            missing_tasks.add(path.stem)
+        elif len(publishers) != 1:
+            raise ValueError('Full job has multiple publishers for ' + path.stem)
     if missing_tasks:
         raise ValueError('Full job missing publish gates: ' + ', '.join(sorted(missing_tasks)))
 
