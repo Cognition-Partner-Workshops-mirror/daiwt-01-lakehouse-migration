@@ -1,0 +1,61 @@
+bundle:
+  name: daiwt-01-migration
+
+variables:
+  catalog:
+    description: Target Unity Catalog catalog.
+  schema_suffix:
+    default: ${workspace.current_user.short_name}
+  bronze_schema:
+    default: bronze_${var.schema_suffix}
+  silver_schema:
+    default: silver_${var.schema_suffix}
+  gold_schema:
+    default: gold_${var.schema_suffix}
+  warehouse_id:
+    default: 6dc4b80538621b7b
+  golden_path:
+    default: /Volumes/daiwt_01_mig_prod/landing/golden
+  job_name_prefix:
+    description: Prefix for bundle job names (presets.name_prefix would also rename schemas).
+    default: "[${var.schema_suffix}] "
+
+targets:
+  dev:
+    default: true
+    presets:
+      trigger_pause_status: PAUSED
+    workspace:
+      root_path: /Workspace/Users/${workspace.current_user.userName}/.bundle/${bundle.name}/dev/${var.schema_suffix}
+    variables:
+      catalog: daiwt_01_mig_dev
+    resources:
+      schemas:
+        bronze:
+          name: ${var.bronze_schema}
+          catalog_name: ${var.catalog}
+          comment: daiwt-01-migration
+        silver:
+          name: ${var.silver_schema}
+          catalog_name: ${var.catalog}
+          comment: daiwt-01-migration
+        gold:
+          name: ${var.gold_schema}
+          catalog_name: ${var.catalog}
+          comment: daiwt-01-migration
+  prod:
+    mode: production
+    permissions:
+      - service_principal_name: ${workspace.current_user.userName}
+        level: CAN_MANAGE
+      - group_name: users
+        level: CAN_VIEW
+    workspace:
+      root_path: /Workspace/Users/${workspace.current_user.userName}/.bundle/${bundle.name}/prod
+    variables:
+      catalog: daiwt_01_mig_prod
+      schema_suffix: prod
+      job_name_prefix: ""
+      bronze_schema: bronze
+      silver_schema: silver
+      gold_schema: gold

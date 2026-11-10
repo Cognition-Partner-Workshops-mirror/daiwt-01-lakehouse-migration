@@ -1,0 +1,34 @@
+name: reset
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        type: choice
+        options: [dev, prod]
+        required: true
+      confirm:
+        type: string
+        required: true
+permissions:
+  contents: read
+  id-token: write
+concurrency:
+  group: reset-${{ inputs.target }}
+  cancel-in-progress: false
+jobs:
+  reset:
+    if: inputs.confirm == inputs.target
+    environment: ${{ inputs.target }}
+    runs-on: ubuntu-latest
+    env:
+      DATABRICKS_AUTH_TYPE: github-oidc
+      DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST }}
+      DATABRICKS_CLIENT_ID: ${{ vars.DATABRICKS_CLIENT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements-dev.txt
+      - uses: databricks/setup-cli@main
+      - run: bash ci/reset.sh "${{ inputs.target }}"
