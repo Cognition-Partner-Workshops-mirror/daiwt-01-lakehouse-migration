@@ -48,6 +48,7 @@ def test_entity_adds_refresh_and_named_drop(tmp_path):
     assert refresh == dict(pipeline_id='${resources.pipelines.silver.id}', full_refresh=True,
                            parameters={'drop': '{{job.parameters.drop}}'})
     assert tasks['verify_silver']['depends_on'] == [{'task_key': 'refresh_silver'}]
+    assert tasks['verify_silver']['spark_python_task']['python_file'] == 'src/parity/parity_check.py'
     unrelated = Job.from_dict({**template, 'tags': {}})
     assert module.configure_silver_job.function(None, unrelated) is unrelated
 
