@@ -1,3 +1,591 @@
 {
-  "outputs": []
+  "outputs": [
+    {
+      "path": "outputs/D0/customer/dim_customer.csv",
+      "drop": "D0",
+      "unit": "customer",
+      "table": "silver.dim_customer",
+      "kind": "table",
+      "keys": [
+        "customer_id"
+      ],
+      "sha256": "7d310e75fe7dff0e627f1b7442faf043ad7403d29f013893acb8627abfbd8c65",
+      "row_count": 5000,
+      "columns": [
+        {
+          "name": "customer_id",
+          "source_type": "INTEGER"
+        },
+        {
+          "name": "customer_name",
+          "source_type": "VARCHAR(80)"
+        },
+        {
+          "name": "branch_id",
+          "source_type": "INTEGER"
+        },
+        {
+          "name": "town",
+          "source_type": "VARCHAR(30)"
+        },
+        {
+          "name": "updated_at",
+          "source_type": "TIMESTAMP(0)"
+        },
+        {
+          "name": "batch_id",
+          "source_type": "BIGINT"
+        },
+        {
+          "name": "src_system_cd",
+          "source_type": "VARCHAR(12)"
+        },
+        {
+          "name": "record_status_cd",
+          "source_type": "CHAR(1)"
+        },
+        {
+          "name": "effective_date",
+          "source_type": "DATE"
+        },
+        {
+          "name": "expiry_date",
+          "source_type": "DATE"
+        },
+        {
+          "name": "customer_type_cd",
+          "source_type": "VARCHAR(12)"
+        },
+        {
+          "name": "residence_country_cd",
+          "source_type": "CHAR(2)"
+        },
+        {
+          "name": "preferred_language_cd",
+          "source_type": "CHAR(2)"
+        },
+        {
+          "name": "kyc_status_cd",
+          "source_type": "VARCHAR(12)"
+        },
+        {
+          "name": "consent_marketing_ind",
+          "source_type": "CHAR(1)"
+        }
+      ]
+    },
+    {
+      "path": "outputs/D0/transactions/fct_transaction.csv",
+      "drop": "D0",
+      "unit": "transactions",
+      "table": "silver.fct_transaction",
+      "kind": "table",
+      "keys": [
+        "transaction_id"
+      ],
+      "sha256": "5d63ff72c48d0f82bac551fa492ed0b20c61b08cc19c585ba84ced927b972879",
+      "row_count": 180000,
+      "columns": [
+        {
+          "name": "transaction_id",
+          "source_type": "BIGINT"
+        },
+        {
+          "name": "account_id",
+          "source_type": "INTEGER"
+        },
+        {
+          "name": "txn_date",
+          "source_type": "DATE"
+        },
+        {
+          "name": "amount",
+          "source_type": "DECIMAL(18,2)"
+        },
+        {
+          "name": "channel",
+          "source_type": "VARCHAR(10)"
+        },
+        {
+          "name": "merchant_id",
+          "source_type": "INTEGER"
+        },
+        {
+          "name": "batch_id",
+          "source_type": "BIGINT"
+        },
+        {
+          "name": "src_system_cd",
+          "source_type": "VARCHAR(12)"
+        },
+        {
+          "name": "record_status_cd",
+          "source_type": "CHAR(1)"
+        },
+        {
+          "name": "effective_date",
+          "source_type": "DATE"
+        },
+        {
+          "name": "expiry_date",
+          "source_type": "DATE"
+        },
+        {
+          "name": "currency_cd",
+          "source_type": "CHAR(3)"
+        },
+        {
+          "name": "posting_status_cd",
+          "source_type": "VARCHAR(10)"
+        },
+        {
+          "name": "reversal_ind",
+          "source_type": "CHAR(1)"
+        },
+        {
+          "name": "clearing_scheme_cd",
+          "source_type": "VARCHAR(12)"
+        }
+      ]
+    },
+    {
+      "path": "outputs/D0/dormant/dim_account.csv",
+      "drop": "D0",
+      "unit": "dormant",
+      "table": "silver.dim_account",
+      "kind": "table",
+      "keys": [
+        "account_id"
+      ],
+      "sha256": "404e4b03041c65593bc41133cf08852cd17cdba41d096b0ee7869638131fdab2",
+      "row_count": 8000,
+      "columns": [
+        {
+          "name": "account_id",
+          "source_type": "INTEGER"
+        },
+        {
+          "name": "customer_id",
+          "source_type": "INTEGER"
+        },
+        {
+          "name": "product_id",
+          "source_type": "INTEGER"
+        },
+        {
+          "name": "opened_date",
+          "source_type": "DATE"
+        },
+        {
+          "name": "dormant_flag",
+          "source_type": "CHAR(1)"
+        },
+        {
+          "name": "batch_id",
+          "source_type": "BIGINT"
+        },
+        {
+          "name": "src_system_cd",
+          "source_type": "VARCHAR(12)"
+        },
+        {
+          "name": "record_status_cd",
+          "source_type": "CHAR(1)"
+        },
+        {
+          "name": "effective_date",
+          "source_type": "DATE"
+        },
+        {
+          "name": "expiry_date",
+          "source_type": "DATE"
+        },
+        {
+          "name": "currency_cd",
+          "source_type": "CHAR(3)"
+        },
+        {
+          "name": "account_status_cd",
+          "source_type": "VARCHAR(10)"
+        },
+        {
+          "name": "accrual_basis_cd",
+          "source_type": "VARCHAR(8)"
+        },
+        {
+          "name": "overdraft_limit",
+          "source_type": "DECIMAL(18,2)"
+        }
+      ]
+    },
+    {
+      "path": "outputs/D0/monthly_balance/mart_monthly_balance.csv",
+      "drop": "D0",
+      "unit": "monthly_balance",
+      "table": "gold.mart_monthly_balance",
+      "kind": "table",
+      "keys": [
+        "account_id",
+        "month_start"
+      ],
+      "sha256": "62529b3cf1c454a22ae8ba5a949434d00a1e4ee0bcec7e54451f7fc365ef4dea",
+      "row_count": 144000,
+      "columns": [
+        {
+          "name": "account_id",
+          "source_type": "INTEGER"
+        },
+        {
+          "name": "month_start",
+          "source_type": "DATE"
+        },
+        {
+          "name": "average_balance",
+          "source_type": "DECIMAL(18,2)"
+        },
+        {
+          "name": "closing_balance",
+          "source_type": "DECIMAL(18,2)"
+        },
+        {
+          "name": "batch_id",
+          "source_type": "BIGINT"
+        },
+        {
+          "name": "src_system_cd",
+          "source_type": "VARCHAR(12)"
+        },
+        {
+          "name": "record_status_cd",
+          "source_type": "CHAR(1)"
+        },
+        {
+          "name": "effective_date",
+          "source_type": "DATE"
+        },
+        {
+          "name": "expiry_date",
+          "source_type": "DATE"
+        }
+      ]
+    },
+    {
+      "path": "outputs/D0/customer_segment/mart_customer_segment.csv",
+      "drop": "D0",
+      "unit": "customer_segment",
+      "table": "gold.mart_customer_segment",
+      "kind": "table",
+      "keys": [
+        "customer_id"
+      ],
+      "sha256": "31c5fa5d9aff8eaac288fec309adf157feb12ccd3ec40e0e76aab679017d2b7d",
+      "row_count": 5000,
+      "columns": [
+        {
+          "name": "customer_id",
+          "source_type": "INTEGER"
+        },
+        {
+          "name": "txn_count",
+          "source_type": "INTEGER"
+        },
+        {
+          "name": "spend",
+          "source_type": "DECIMAL(18,2)"
+        },
+        {
+          "name": "last_txn_date",
+          "source_type": "DATE"
+        },
+        {
+          "name": "segment",
+          "source_type": "VARCHAR(12)"
+        },
+        {
+          "name": "batch_id",
+          "source_type": "BIGINT"
+        },
+        {
+          "name": "src_system_cd",
+          "source_type": "VARCHAR(12)"
+        },
+        {
+          "name": "record_status_cd",
+          "source_type": "CHAR(1)"
+        },
+        {
+          "name": "effective_date",
+          "source_type": "DATE"
+        },
+        {
+          "name": "expiry_date",
+          "source_type": "DATE"
+        }
+      ]
+    },
+    {
+      "path": "outputs/D0/branch_league/mart_branch_performance.csv",
+      "drop": "D0",
+      "unit": "branch_league",
+      "table": "gold.mart_branch_performance",
+      "kind": "table",
+      "keys": [
+        "branch_id"
+      ],
+      "sha256": "01785f30cb0f77cff14585df21d14523064bac226cf55499f66bc974872c9790",
+      "row_count": 8,
+      "columns": [
+        {
+          "name": "branch_id",
+          "source_type": "INTEGER"
+        },
+        {
+          "name": "customer_count",
+          "source_type": "INTEGER"
+        },
+        {
+          "name": "net_amount",
+          "source_type": "DECIMAL(18,2)"
+        },
+        {
+          "name": "league_rank",
+          "source_type": "INTEGER"
+        },
+        {
+          "name": "batch_id",
+          "source_type": "BIGINT"
+        },
+        {
+          "name": "src_system_cd",
+          "source_type": "VARCHAR(12)"
+        },
+        {
+          "name": "record_status_cd",
+          "source_type": "CHAR(1)"
+        },
+        {
+          "name": "effective_date",
+          "source_type": "DATE"
+        },
+        {
+          "name": "expiry_date",
+          "source_type": "DATE"
+        }
+      ]
+    },
+    {
+      "path": "outputs/D0/product_profitability/mart_product_profitability.csv",
+      "drop": "D0",
+      "unit": "product_profitability",
+      "table": "gold.mart_product_profitability",
+      "kind": "table",
+      "keys": [
+        "product_id"
+      ],
+      "sha256": "c7101aff490aaced0ddecd96d07a683bd2783112d8b99461c7a6b99791ec1ffd",
+      "row_count": 4,
+      "columns": [
+        {
+          "name": "product_id",
+          "source_type": "INTEGER"
+        },
+        {
+          "name": "average_balance",
+          "source_type": "DECIMAL(18,2)"
+        },
+        {
+          "name": "annual_income",
+          "source_type": "DECIMAL(18,2)"
+        },
+        {
+          "name": "batch_id",
+          "source_type": "BIGINT"
+        },
+        {
+          "name": "src_system_cd",
+          "source_type": "VARCHAR(12)"
+        },
+        {
+          "name": "record_status_cd",
+          "source_type": "CHAR(1)"
+        },
+        {
+          "name": "effective_date",
+          "source_type": "DATE"
+        },
+        {
+          "name": "expiry_date",
+          "source_type": "DATE"
+        }
+      ]
+    },
+    {
+      "path": "outputs/D0/channel/mart_channel_daily.csv",
+      "drop": "D0",
+      "unit": "channel",
+      "table": "gold.mart_channel_daily",
+      "kind": "table",
+      "keys": [
+        "txn_date",
+        "channel"
+      ],
+      "sha256": "f4fded27e1afb4b011c67782f3821433b6f0eea507e2f4fa13979bf6437d99b7",
+      "row_count": 2188,
+      "columns": [
+        {
+          "name": "txn_date",
+          "source_type": "DATE"
+        },
+        {
+          "name": "channel",
+          "source_type": "VARCHAR(10)"
+        },
+        {
+          "name": "txn_count",
+          "source_type": "INTEGER"
+        },
+        {
+          "name": "net_amount",
+          "source_type": "DECIMAL(18,2)"
+        },
+        {
+          "name": "batch_id",
+          "source_type": "BIGINT"
+        },
+        {
+          "name": "src_system_cd",
+          "source_type": "VARCHAR(12)"
+        },
+        {
+          "name": "record_status_cd",
+          "source_type": "CHAR(1)"
+        },
+        {
+          "name": "effective_date",
+          "source_type": "DATE"
+        },
+        {
+          "name": "expiry_date",
+          "source_type": "DATE"
+        }
+      ]
+    },
+    {
+      "path": "outputs/D0/card_category/mart_card_spend_category.csv",
+      "drop": "D0",
+      "unit": "card_category",
+      "table": "gold.mart_card_spend_category",
+      "kind": "table",
+      "keys": [
+        "category"
+      ],
+      "sha256": "18346676429835650d32ae66af3b68beccef4b16d8a2947bb4305a8de55b8124",
+      "row_count": 4,
+      "columns": [
+        {
+          "name": "category",
+          "source_type": "VARCHAR(15)"
+        },
+        {
+          "name": "txn_count",
+          "source_type": "INTEGER"
+        },
+        {
+          "name": "spend",
+          "source_type": "DECIMAL(18,2)"
+        },
+        {
+          "name": "batch_id",
+          "source_type": "BIGINT"
+        },
+        {
+          "name": "src_system_cd",
+          "source_type": "VARCHAR(12)"
+        },
+        {
+          "name": "record_status_cd",
+          "source_type": "CHAR(1)"
+        },
+        {
+          "name": "effective_date",
+          "source_type": "DATE"
+        },
+        {
+          "name": "expiry_date",
+          "source_type": "DATE"
+        }
+      ]
+    },
+    {
+      "path": "outputs/D0/close_batch/etl_batch_control.csv",
+      "drop": "D0",
+      "unit": "close_batch",
+      "table": "silver.etl_batch_control",
+      "kind": "table",
+      "keys": [
+        "batch_date",
+        "job_name"
+      ],
+      "sha256": "87e02db982d2c550c11b82d881ca1f9e02830019ae4e99decbeda8250550aaca",
+      "row_count": 1,
+      "columns": [
+        {
+          "name": "batch_date",
+          "source_type": "DATE"
+        },
+        {
+          "name": "job_name",
+          "source_type": "VARCHAR(30)"
+        },
+        {
+          "name": "status",
+          "source_type": "VARCHAR(10)"
+        },
+        {
+          "name": "row_count",
+          "source_type": "BIGINT"
+        },
+        {
+          "name": "batch_id",
+          "source_type": "BIGINT"
+        },
+        {
+          "name": "src_system_cd",
+          "source_type": "VARCHAR(12)"
+        },
+        {
+          "name": "record_status_cd",
+          "source_type": "CHAR(1)"
+        },
+        {
+          "name": "effective_date",
+          "source_type": "DATE"
+        },
+        {
+          "name": "expiry_date",
+          "source_type": "DATE"
+        },
+        {
+          "name": "last_step_cd",
+          "source_type": "VARCHAR(30)"
+        },
+        {
+          "name": "window_start_date",
+          "source_type": "DATE"
+        },
+        {
+          "name": "window_end_date",
+          "source_type": "DATE"
+        },
+        {
+          "name": "reject_count",
+          "source_type": "BIGINT"
+        },
+        {
+          "name": "scheduler_group_cd",
+          "source_type": "VARCHAR(12)"
+        }
+      ]
+    }
+  ]
 }
