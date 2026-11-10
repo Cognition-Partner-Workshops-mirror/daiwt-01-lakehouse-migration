@@ -1,0 +1,7 @@
+{
+  "job": "gold_channel",
+  "legacy_unit": "channel",
+  "outputs": ["gold.mart_channel_daily"],
+  "owns": [],
+  "depends_on": ["silver_calendar", "silver_transactions"]
+}

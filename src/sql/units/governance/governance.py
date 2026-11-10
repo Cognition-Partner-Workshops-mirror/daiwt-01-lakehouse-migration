@@ -84,12 +84,13 @@ def build_plan(registry, contract, catalog, schemas, owner, existing, metadata,
             form = forms[row['table_type']]
             target = '.'.join(map(identifier, (catalog, schema, name)))
             plan['pipeline'] = row['table_type'] in ('MATERIALIZED_VIEW', 'STREAMING_TABLE')
-            statements = [('comment', f'COMMENT ON {form} {target} IS {literal(comment)}')]
+            comment_form = 'TABLE' if plan['pipeline'] else form
+            statements = [('comment', f'COMMENT ON {comment_form} {target} IS {literal(comment)}')]
             statements += [('column:' + column, f'COMMENT ON COLUMN {target}.{identifier(column)} IS {literal(value)}')
                            for column, value in columns.items()]
             statements += [('tags', f'ALTER {form} {target} SET TAGS (' + ', '.join(
                 f'{literal(key)} = {literal(value)}' for key, value in tags.items()) + ')')]
-            if owner:
+            if owner and not plan['pipeline']:
                 statements += [('owner', f'ALTER {form} {target} OWNER TO {identifier(owner)}')]
             plan['statements'] = statements
         plans.append(plan)
@@ -131,7 +132,7 @@ def mismatches(plan, tables, tags, columns, exemptions=()):
     key = (plan['schema'], plan['name'])
     row = tables[key]
     expected = {'comment': (row['comment'], plan['comment'])}
-    if plan['owner']:
+    if plan['owner'] and not plan['pipeline']:
         expected['owner'] = (row['table_owner'], plan['owner'])
     expected.update({'column:' + name: (columns.get(key, {}).get(name), value)
                      for name, value in plan['columns'].items()})

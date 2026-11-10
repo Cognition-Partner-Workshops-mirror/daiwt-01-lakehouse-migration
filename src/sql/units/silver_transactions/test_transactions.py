@@ -98,7 +98,7 @@ def test_parameters_come_from_the_selected_drop():
     assert '${drop}' not in SQL and 'TEMPORARY' not in SQL
     feed = statement('CREATE OR REFRESH PRIVATE MATERIALIZED VIEW transaction_feed')
     assert 'asof_stg_transaction_feed(:drop)' in feed
-    assert "WHERE '${silver_bad_rows}' = 'true'" in feed
+    assert 'silver_bad_rows' not in SQL
 
 
 def test_registry_validates_with_upstream():

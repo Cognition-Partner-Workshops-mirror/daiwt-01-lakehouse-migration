@@ -98,21 +98,10 @@ def test_rejects_whole_delivery_before_dedup(invalid):
         db.execute('SELECT * FROM dim_customer').fetchall()
 
 
-def test_demo_switch_quarantines_without_rejecting_delivery():
+def test_demo_switch_does_not_inject_into_fail_gated_unit():
     db = execute([row()], bad_rows=True)
-    cursor = db.execute('SELECT * FROM dim_customer_quarantine')
-    assert len(cursor.fetchall()) == 1
-    assert '_demo_row' not in [c[0] for c in cursor.description]
-    assert db.execute('SELECT customer_id FROM dim_customer').fetchall() == [(1,)]
+    assert db.execute('SELECT count(*) FROM dim_customer_quarantine').fetchone() == (0,)
     assert db.execute('SELECT * FROM dim_customer').fetchall() == execute([row()]).execute('SELECT * FROM dim_customer').fetchall()
-    assert execute([], bad_rows=True).execute('SELECT * FROM dim_customer').fetchall() == []
-
-
-def test_demo_switch_does_not_bypass_real_rejects():
-    db = execute([row(), row(key='0')], bad_rows=True)
-    assert db.execute('SELECT count(*) FROM dim_customer_quarantine').fetchone() == (2,)
-    with pytest.raises(sqlite3.OperationalError):
-        db.execute('SELECT * FROM dim_customer').fetchall()
 
 
 @pytest.mark.parametrize('older,newer', [
