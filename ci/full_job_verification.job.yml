@@ -9,6 +9,7 @@ resources:
             dependencies:
               - databricks-sdk>=0.85,<1
               - PyYAML>=6,<7
+              - databricks-bundles==1.25.0
       tasks:
         - task_key: verify_full_job
           environment_key: parity

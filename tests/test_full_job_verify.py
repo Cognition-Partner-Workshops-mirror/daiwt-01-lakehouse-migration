@@ -12,6 +12,7 @@ import full_job_verify as entry
 import full_job_check as checker
 from attest import render
 from registry import load
+from nightly_resources import VIEWS
 
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACT = json.loads((ROOT / 'src/parity/contract.json').read_text())
@@ -23,6 +24,11 @@ def complete_registry():
         unit = output['unit']
         spec = registry.setdefault(unit, dict(job=unit, legacy_unit=unit, outputs=[], owns=[], depends_on=[]))
         spec['outputs'].append(output['table'])
+    outputs = {entry['table'] for entry in CONTRACT['outputs']}
+    views = {'gold.' + name for name in VIEWS}
+    supporting = {table for requirements in VIEWS.values() for table in requirements} - outputs - views
+    registry['supporting'] = dict(job='supporting', legacy_unit='foundation', outputs=[],
+                                  owns=sorted(supporting), depends_on=[])
     return registry
 
 
@@ -41,6 +47,13 @@ def test_readiness_is_complete_not_partial_or_empty():
     registry = complete_registry()
     del registry['governance']
     with pytest.raises(ValueError, match='requires governance'):
+        checker.require_complete_registry(registry, CONTRACT)
+
+
+def test_missing_supporting_table_owner_rejects_omitted_publish_gates():
+    registry = complete_registry()
+    registry['supporting']['owns'].remove('silver.dim_branch')
+    with pytest.raises(ValueError, match='missing publish gates: .*v_credit_risk.*v_customer_portfolio'):
         checker.require_complete_registry(registry, CONTRACT)
 
 

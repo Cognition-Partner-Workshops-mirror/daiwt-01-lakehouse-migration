@@ -12,7 +12,9 @@ from pathlib import Path
 from parity_check import GOLDEN_PATH, ROOT, GoldenStore, Warehouse, identifier, run as parity_run
 
 sys.path.insert(0, str(ROOT / 'ci'))
+sys.path.insert(0, str(ROOT))
 from registry import load, validate
+from nightly_resources import build_job
 
 
 def require_complete_registry(registry, contract):
@@ -24,6 +26,13 @@ def require_complete_registry(registry, contract):
         raise ValueError('Full D0 registry incomplete: ' + ', '.join(sorted(missing)))
     if not any(spec['job'] == 'governance' for spec in registry.values()):
         raise ValueError('Full job requires governance')
+    manifest = json.loads((ROOT / 'golden/manifest.json').read_text())
+    job = build_job(registry, manifest, contract, root=ROOT)
+    required_tasks = {'release_export', 'reconcile'} | {
+        path.stem for path in (ROOT / 'src/orchestration/views').glob('*.sql')}
+    missing_tasks = required_tasks - {task['task_key'] for task in job['tasks']}
+    if missing_tasks:
+        raise ValueError('Full job missing publish gates: ' + ', '.join(sorted(missing_tasks)))
 
 
 def compare_controls(manifest, download, warehouse, suffix):
