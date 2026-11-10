@@ -2,9 +2,12 @@
 
 SQL-file load/check tasks use the bundle warehouse and target permissions. All
 11 delivered CSV inputs are read from `:golden_path/inputs/<drop>/<table>/<table>.csv`.
-No outputs or parquet alternatives are loaded. D0 metadata and counts are pinned
-from golden/manifest.json; unknown drops fail before any DELETE. Add a new drop's
-metadata and expected counts before replaying it.
+No outputs or parquet alternatives are loaded. The manifest_drops job parameter
+is generated from golden/manifest.json drops and input row counts by
+`python ci/generate_silver_asof.py`. Add a drop to that manifest and regenerate;
+no SQL edit is needed. Both tasks resolve metadata from that parameter and fail
+clearly for unknown drops before any DELETE. Generated-file tests prevent stale
+metadata from landing. The table below describes the current D0 capture.
 
 | Legacy input | Bronze name | D0 rows | Non-null key check |
 | --- | --- | ---: | --- |

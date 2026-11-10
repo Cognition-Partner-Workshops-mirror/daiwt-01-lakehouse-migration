@@ -21,7 +21,8 @@ def test_real_registry():
     import yaml
     for unit, spec in registry.items():
         jobs = {}
-        for path in (ROOT / "src/sql/units" / unit).glob("*.job.yml"):
+        directory = spec['job'] if spec['job'] == 'silver_pipeline' else unit
+        for path in (ROOT / "src/sql/units" / directory).glob("*.job.yml"):
             jobs.update(yaml.safe_load(path.read_text()).get("resources", {}).get("jobs", {}))
         assert spec["job"] in jobs
 

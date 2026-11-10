@@ -52,7 +52,11 @@ def validate(registry, contract):
             raise ValueError(f"{unit}: job must be a non-empty string")
         if not re.fullmatch(r"[a-z][a-z0-9_]*", job):
             raise ValueError(f"{unit}: invalid job identifier: {job}")
-        if job in jobs:
+        if job == 'silver_pipeline' and unit != 'silver_pipeline':
+            if (not unit.startswith('silver_') or not isinstance(spec['depends_on'], list)
+                    or 'silver_pipeline' not in spec['depends_on']):
+                raise ValueError(f'{unit}: shared silver_pipeline job requires a silver entity depending on silver_pipeline')
+        if job in jobs and job != 'silver_pipeline':
             raise ValueError(f"duplicate job: {job}")
         jobs.add(job)
         for field in ("outputs", "owns", "depends_on"):

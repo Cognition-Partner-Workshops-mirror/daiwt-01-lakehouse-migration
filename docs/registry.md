@@ -17,8 +17,14 @@ The frozen `unit.json` format has exactly these five keys:
 }
 ```
 
-`job` is a unique bundle job key matching `[a-z][a-z0-9_]*` and defined in
-the unit directory’s `*.job.yml`. `legacy_unit` names a source legacy unit
+`job` is a bundle job key matching `[a-z][a-z0-9_]*`, normally unique and defined
+in the unit directory's `*.job.yml`. The only sharing exception is a `silver_*`
+entity with `job: silver_pipeline` and a direct `silver_pipeline` dependency:
+its job is defined by the scaffold's YAML, conditionally augmented by
+`silver_resources.py`. Entities need no job YAML. The runner executes each job
+key once in dependency order; selecting entities refreshes all deployed entities
+through the shared job, followed by visible Silver-layer parity.
+`legacy_unit` names a source legacy unit
 present in the parity contract outputs. Every `outputs` table must be a
 contract table belonging to that legacy unit. `owns` lists other written
 bronze/silver/gold tables and must never contain contract tables. Each table

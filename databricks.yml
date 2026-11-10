@@ -5,6 +5,8 @@ bundle:
 python:
   resources:
     - 'silver_resources:load_resources'
+  mutators:
+    - 'silver_resources:configure_silver_job'
 
 include: [src/sql/units/*/*.yml, ci/*.job.yml]
 

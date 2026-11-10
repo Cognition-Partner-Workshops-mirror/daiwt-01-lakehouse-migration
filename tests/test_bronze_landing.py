@@ -1,3 +1,4 @@
+import copy
 import json
 import re
 from pathlib import Path
@@ -5,181 +6,39 @@ from pathlib import Path
 import pytest
 import yaml
 
+from bronze_schema import bronze_tables
+from generate_silver_asof import manifest_drops
+
 ROOT = Path(__file__).resolve().parents[1]
 UNIT = ROOT / 'src/sql/units/bronze_landing'
 LOAD = (UNIT / 'load.sql').read_text()
 CHECK = (UNIT / 'self_check.sql').read_text()
 MANIFEST = json.loads((ROOT / 'golden/manifest.json').read_text())
+TABLES = bronze_tables(ROOT)
 SOURCE = {
-    'nvb_edw.dim_account': dict(name='edw_dim_account', keys=["account_id"], columns=[
-        dict(name='account_id', source='INTEGER', type='INT', required=False),
-        dict(name='customer_id', source='INTEGER', type='INT', required=False),
-        dict(name='product_id', source='INTEGER', type='INT', required=False),
-        dict(name='opened_date', source='DATE', type='DATE', required=False),
-        dict(name='dormant_flag', source='CHAR(1)', type='STRING', required=False),
-        dict(name='batch_id', source='BIGINT', type='BIGINT', required=True),
-        dict(name='load_ts', source='TIMESTAMP(0)', type='TIMESTAMP_NTZ', required=True),
-        dict(name='src_system_cd', source='VARCHAR(12)', type='STRING', required=False),
-        dict(name='record_status_cd', source='CHAR(1)', type='STRING', required=False),
-        dict(name='effective_date', source='DATE', type='DATE', required=False),
-        dict(name='expiry_date', source='DATE', type='DATE', required=False),
-        dict(name='currency_cd', source='CHAR(3)', type='STRING', required=False),
-        dict(name='account_status_cd', source='VARCHAR(10)', type='STRING', required=False),
-        dict(name='accrual_basis_cd', source='VARCHAR(8)', type='STRING', required=False),
-        dict(name='overdraft_limit', source='DECIMAL(18,2)', type='DECIMAL(18,2)', required=False),
-    ]),
-    'nvb_edw.dim_branch': dict(name='edw_dim_branch', keys=["branch_id"], columns=[
-        dict(name='branch_id', source='INTEGER', type='INT', required=False),
-        dict(name='town', source='VARCHAR(30)', type='STRING', required=False),
-        dict(name='batch_id', source='BIGINT', type='BIGINT', required=True),
-        dict(name='load_ts', source='TIMESTAMP(0)', type='TIMESTAMP_NTZ', required=True),
-        dict(name='src_system_cd', source='VARCHAR(12)', type='STRING', required=False),
-        dict(name='record_status_cd', source='CHAR(1)', type='STRING', required=False),
-        dict(name='effective_date', source='DATE', type='DATE', required=False),
-        dict(name='expiry_date', source='DATE', type='DATE', required=False),
-        dict(name='branch_name', source='VARCHAR(80)', type='STRING', required=False),
-        dict(name='region_cd', source='VARCHAR(8)', type='STRING', required=False),
-        dict(name='branch_type_cd', source='VARCHAR(10)', type='STRING', required=False),
-        dict(name='service_language_cd', source='CHAR(2)', type='STRING', required=False),
-        dict(name='branch_status_cd', source='VARCHAR(10)', type='STRING', required=False),
-    ]),
-    'nvb_edw.dim_calendar': dict(name='edw_dim_calendar', keys=["calendar_date"], columns=[
-        dict(name='calendar_date', source='DATE', type='DATE', required=False),
-        dict(name='month_start', source='DATE', type='DATE', required=False),
-        dict(name='year_no', source='INTEGER', type='INT', required=False),
-        dict(name='month_no', source='INTEGER', type='INT', required=False),
-        dict(name='batch_id', source='BIGINT', type='BIGINT', required=True),
-        dict(name='load_ts', source='TIMESTAMP(0)', type='TIMESTAMP_NTZ', required=True),
-        dict(name='src_system_cd', source='VARCHAR(12)', type='STRING', required=False),
-        dict(name='record_status_cd', source='CHAR(1)', type='STRING', required=False),
-        dict(name='effective_date', source='DATE', type='DATE', required=False),
-        dict(name='expiry_date', source='DATE', type='DATE', required=False),
-        dict(name='calendar_name', source='VARCHAR(20)', type='STRING', required=False),
-        dict(name='business_day_rule_cd', source='VARCHAR(12)', type='STRING', required=False),
-    ]),
-    'nvb_edw.dim_card': dict(name='edw_dim_card', keys=["card_id"], columns=[
-        dict(name='card_id', source='INTEGER', type='INT', required=False),
-        dict(name='account_id', source='INTEGER', type='INT', required=False),
-        dict(name='card_type', source='VARCHAR(10)', type='STRING', required=False),
-        dict(name='batch_id', source='BIGINT', type='BIGINT', required=True),
-        dict(name='load_ts', source='TIMESTAMP(0)', type='TIMESTAMP_NTZ', required=True),
-        dict(name='src_system_cd', source='VARCHAR(12)', type='STRING', required=False),
-        dict(name='record_status_cd', source='CHAR(1)', type='STRING', required=False),
-        dict(name='effective_date', source='DATE', type='DATE', required=False),
-        dict(name='expiry_date', source='DATE', type='DATE', required=False),
-        dict(name='network_cd', source='VARCHAR(12)', type='STRING', required=False),
-        dict(name='card_status_cd', source='VARCHAR(10)', type='STRING', required=False),
-        dict(name='card_expiry_date', source='DATE', type='DATE', required=False),
-        dict(name='contactless_ind', source='CHAR(1)', type='STRING', required=False),
-        dict(name='online_enabled_ind', source='CHAR(1)', type='STRING', required=False),
-    ]),
-    'nvb_edw.dim_merchant': dict(name='edw_dim_merchant', keys=["merchant_id"], columns=[
-        dict(name='merchant_id', source='INTEGER', type='INT', required=False),
-        dict(name='merchant_name', source='VARCHAR(40)', type='STRING', required=False),
-        dict(name='category', source='VARCHAR(15)', type='STRING', required=False),
-        dict(name='batch_id', source='BIGINT', type='BIGINT', required=True),
-        dict(name='load_ts', source='TIMESTAMP(0)', type='TIMESTAMP_NTZ', required=True),
-        dict(name='src_system_cd', source='VARCHAR(12)', type='STRING', required=False),
-        dict(name='record_status_cd', source='CHAR(1)', type='STRING', required=False),
-        dict(name='effective_date', source='DATE', type='DATE', required=False),
-        dict(name='expiry_date', source='DATE', type='DATE', required=False),
-        dict(name='country_cd', source='CHAR(2)', type='STRING', required=False),
-        dict(name='settlement_currency_cd', source='CHAR(3)', type='STRING', required=False),
-        dict(name='acquirer_cd', source='VARCHAR(12)', type='STRING', required=False),
-        dict(name='merchant_status_cd', source='VARCHAR(10)', type='STRING', required=False),
-    ]),
-    'nvb_edw.dim_product': dict(name='edw_dim_product', keys=["product_id"], columns=[
-        dict(name='product_id', source='INTEGER', type='INT', required=False),
-        dict(name='product_name', source='VARCHAR(30)', type='STRING', required=False),
-        dict(name='annual_rate', source='DECIMAL(6,2)', type='DECIMAL(6,2)', required=False),
-        dict(name='batch_id', source='BIGINT', type='BIGINT', required=True),
-        dict(name='load_ts', source='TIMESTAMP(0)', type='TIMESTAMP_NTZ', required=True),
-        dict(name='src_system_cd', source='VARCHAR(12)', type='STRING', required=False),
-        dict(name='record_status_cd', source='CHAR(1)', type='STRING', required=False),
-        dict(name='effective_date', source='DATE', type='DATE', required=False),
-        dict(name='expiry_date', source='DATE', type='DATE', required=False),
-        dict(name='product_family_cd', source='VARCHAR(12)', type='STRING', required=False),
-        dict(name='currency_cd', source='CHAR(3)', type='STRING', required=False),
-        dict(name='product_status_cd', source='VARCHAR(10)', type='STRING', required=False),
-        dict(name='rate_basis_cd', source='VARCHAR(8)', type='STRING', required=False),
-        dict(name='minimum_balance', source='DECIMAL(18,2)', type='DECIMAL(18,2)', required=False),
-    ]),
-    'nvb_edw.fct_daily_balance': dict(name='edw_fct_daily_balance', keys=["account_id","balance_date"], columns=[
-        dict(name='account_id', source='INTEGER', type='INT', required=False),
-        dict(name='balance_date', source='DATE', type='DATE', required=False),
-        dict(name='balance', source='DECIMAL(18,2)', type='DECIMAL(18,2)', required=False),
-        dict(name='batch_id', source='BIGINT', type='BIGINT', required=True),
-        dict(name='load_ts', source='TIMESTAMP(0)', type='TIMESTAMP_NTZ', required=True),
-        dict(name='src_system_cd', source='VARCHAR(12)', type='STRING', required=False),
-        dict(name='record_status_cd', source='CHAR(1)', type='STRING', required=False),
-        dict(name='effective_date', source='DATE', type='DATE', required=False),
-        dict(name='expiry_date', source='DATE', type='DATE', required=False),
-        dict(name='balance_type_cd', source='VARCHAR(12)', type='STRING', required=False),
-        dict(name='currency_cd', source='CHAR(3)', type='STRING', required=False),
-        dict(name='accrued_interest', source='DECIMAL(18,2)', type='DECIMAL(18,2)', required=False),
-        dict(name='reserved_amount', source='DECIMAL(18,2)', type='DECIMAL(18,2)', required=False),
-    ]),
-    'nvb_edw.fct_loan': dict(name='edw_fct_loan', keys=["loan_id"], columns=[
-        dict(name='loan_id', source='INTEGER', type='INT', required=False),
-        dict(name='account_id', source='INTEGER', type='INT', required=False),
-        dict(name='outstanding', source='DECIMAL(18,2)', type='DECIMAL(18,2)', required=False),
-        dict(name='arrears_days', source='INTEGER', type='INT', required=False),
-        dict(name='batch_id', source='BIGINT', type='BIGINT', required=True),
-        dict(name='load_ts', source='TIMESTAMP(0)', type='TIMESTAMP_NTZ', required=True),
-        dict(name='src_system_cd', source='VARCHAR(12)', type='STRING', required=False),
-        dict(name='record_status_cd', source='CHAR(1)', type='STRING', required=False),
-        dict(name='effective_date', source='DATE', type='DATE', required=False),
-        dict(name='expiry_date', source='DATE', type='DATE', required=False),
-        dict(name='loan_status_cd', source='VARCHAR(10)', type='STRING', required=False),
-        dict(name='currency_cd', source='CHAR(3)', type='STRING', required=False),
-        dict(name='contractual_rate', source='DECIMAL(6,2)', type='DECIMAL(6,2)', required=False),
-        dict(name='repayment_frequency_cd', source='VARCHAR(10)', type='STRING', required=False),
-        dict(name='collateral_type_cd', source='VARCHAR(12)', type='STRING', required=False),
-    ]),
-    'nvb_edw.fct_product_order': dict(name='edw_fct_product_order', keys=["order_id"], columns=[
-        dict(name='order_id', source='INTEGER', type='INT', required=False),
-        dict(name='customer_id', source='INTEGER', type='INT', required=False),
-        dict(name='product_id', source='INTEGER', type='INT', required=False),
-        dict(name='order_date', source='DATE', type='DATE', required=False),
-        dict(name='status', source='VARCHAR(10)', type='STRING', required=False),
-        dict(name='batch_id', source='BIGINT', type='BIGINT', required=True),
-        dict(name='load_ts', source='TIMESTAMP(0)', type='TIMESTAMP_NTZ', required=True),
-        dict(name='src_system_cd', source='VARCHAR(12)', type='STRING', required=False),
-        dict(name='record_status_cd', source='CHAR(1)', type='STRING', required=False),
-        dict(name='effective_date', source='DATE', type='DATE', required=False),
-        dict(name='expiry_date', source='DATE', type='DATE', required=False),
-        dict(name='application_channel_cd', source='VARCHAR(10)', type='STRING', required=False),
-        dict(name='decision_system_cd', source='VARCHAR(12)', type='STRING', required=False),
-        dict(name='currency_cd', source='CHAR(3)', type='STRING', required=False),
-        dict(name='manual_review_ind', source='CHAR(1)', type='STRING', required=False),
-    ]),
-    'nvb_stg.customer_feed': dict(name='stg_customer_feed', keys=["customer_id"], columns=[
-        dict(name='customer_id', source='VARCHAR(80)', type='STRING', required=False),
-        dict(name='customer_name', source='VARCHAR(160)', type='STRING', required=False),
-        dict(name='branch_id', source='VARCHAR(80)', type='STRING', required=False),
-        dict(name='town', source='VARCHAR(80)', type='STRING', required=False),
-        dict(name='updated_at', source='VARCHAR(26)', type='STRING', required=False),
-    ]),
-    'nvb_stg.transaction_feed': dict(name='stg_transaction_feed', keys=["transaction_id"], columns=[
-        dict(name='transaction_id', source='VARCHAR(80)', type='STRING', required=False),
-        dict(name='account_id', source='VARCHAR(80)', type='STRING', required=False),
-        dict(name='txn_date', source='VARCHAR(80)', type='STRING', required=False),
-        dict(name='amount', source='VARCHAR(80)', type='STRING', required=False),
-        dict(name='channel', source='VARCHAR(80)', type='STRING', required=False),
-        dict(name='merchant_id', source='VARCHAR(80)', type='STRING', required=False),
-    ]),
+    'nvb_edw.dim_account': dict(name='edw_dim_account', keys=["account_id"], columns=TABLES['edw_dim_account']),
+    'nvb_edw.dim_branch': dict(name='edw_dim_branch', keys=["branch_id"], columns=TABLES['edw_dim_branch']),
+    'nvb_edw.dim_calendar': dict(name='edw_dim_calendar', keys=["calendar_date"], columns=TABLES['edw_dim_calendar']),
+    'nvb_edw.dim_card': dict(name='edw_dim_card', keys=["card_id"], columns=TABLES['edw_dim_card']),
+    'nvb_edw.dim_merchant': dict(name='edw_dim_merchant', keys=["merchant_id"], columns=TABLES['edw_dim_merchant']),
+    'nvb_edw.dim_product': dict(name='edw_dim_product', keys=["product_id"], columns=TABLES['edw_dim_product']),
+    'nvb_edw.fct_daily_balance': dict(name='edw_fct_daily_balance', keys=["account_id","balance_date"], columns=TABLES['edw_fct_daily_balance']),
+    'nvb_edw.fct_loan': dict(name='edw_fct_loan', keys=["loan_id"], columns=TABLES['edw_fct_loan']),
+    'nvb_edw.fct_product_order': dict(name='edw_fct_product_order', keys=["order_id"], columns=TABLES['edw_fct_product_order']),
+    'nvb_stg.customer_feed': dict(name='stg_customer_feed', keys=["customer_id"], columns=TABLES['stg_customer_feed']),
+    'nvb_stg.transaction_feed': dict(name='stg_transaction_feed', keys=["transaction_id"], columns=TABLES['stg_transaction_feed']),
 }
 
 
 def test_all_csv_inputs_and_no_outputs():
     entries = [e for e in MANIFEST['files'] if e.get('format') == 'csv' and e['path'].startswith('inputs/')]
     assert {e['table'] for e in entries} == set(SOURCE)
-    assert LOAD.count('FROM read_files(') == len(entries)
+    assert LOAD.count('FROM read_files(') == len({e['table'] for e in entries})
     for entry in entries:
         spec = SOURCE[entry['table']]
         assert entry['columns'] == [c['name'] for c in spec['columns']]
         assert f"/{entry['table']}/{entry['table']}.csv" in LOAD
-        assert f"WHEN 'D0' THEN {entry['row_count']} END" in CHECK
+        assert f"element_at(_landing_counts, '{entry['table']}')" in CHECK
     assert '/outputs/' not in LOAD and '.parquet' not in LOAD
 
 
@@ -206,7 +65,7 @@ def test_lineage_and_fail_closed_reader():
     for token in ["SET ANSI_MODE = true", "sep => '|'", "mode => 'FAILFAST'", 'enforceSchema => false',
                   "schemaEvolutionMode => 'rescue'", "rescuedDataColumn => '_rescued_data'",
                   'readerCaseSensitive => true', '_rescued_data IS NULL', '_metadata.file_path',
-                  'current_timestamp()', "Unknown captured drop", "DATE '2025-06-30'", '20250630']:
+                  'current_timestamp()', "Unknown captured drop", '_landing_business_date', '_landing_batch_id']:
         assert token in LOAD
     for column in ['_drop', '_batch_id', '_business_date', '_source_file', '_loaded_at']:
         assert column + ' IS NULL' in CHECK
@@ -220,7 +79,8 @@ def test_registry_and_task_chain():
     assert set(spec['owns']) == {'bronze.' + s['name'] for s in SOURCE.values()}
     job = yaml.safe_load((UNIT / 'bronze_landing.job.yml').read_text())['resources']['jobs']['bronze_landing']
     assert job['name'] == '${var.job_name_prefix}bronze_landing'
-    assert job['parameters'] == [{'name': 'drop', 'default': 'D0'}]
+    assert job['parameters'][0] == {'name': 'drop', 'default': 'D0'}
+    assert json.loads(job['parameters'][1]['default']) == manifest_drops(MANIFEST)
     assert job['tasks'][1]['depends_on'] == [{'task_key': 'load_inputs'}]
     for task, filename in zip(job['tasks'], ['load.sql', 'self_check.sql']):
         assert task['sql_task']['file'] == {'path': './' + filename, 'source': 'WORKSPACE'}
@@ -228,3 +88,28 @@ def test_registry_and_task_chain():
         assert task['sql_task']['warehouse_id'] == '${var.warehouse_id}'
     readme = (UNIT / 'README.md').read_text()
     assert all(t in readme and s['name'] in readme for t, s in SOURCE.items())
+
+
+def test_metadata_is_not_pinned_in_sql():
+    for sql in [LOAD, CHECK]:
+        assert "CASE :drop" not in sql and "'D0'" not in sql
+        assert 'from_json(:manifest_drops' in sql
+        assert 'Unknown captured drop' in sql
+    assert LOAD.index('Unknown captured drop') < LOAD.index('DELETE FROM')
+
+
+def test_generated_metadata_supports_new_drop():
+    manifest = copy.deepcopy(MANIFEST)
+    manifest['drops'].append(dict(name='D2', batch_id=20250702, business_date='2025-07-02'))
+    for entry in list(manifest['files']):
+        if entry['path'].startswith('inputs/D0/'):
+            manifest['files'].append({**entry, 'path': entry['path'].replace('inputs/D0/', 'inputs/D2/')})
+    metadata = manifest_drops(manifest)
+    assert metadata['D2']['batch_id'] == 20250702
+    assert metadata['D2']['counts'] == metadata['D0']['counts']
+    assert metadata['D2']['business_date'] == '2025-07-02'
+    assert 'unknown' not in metadata
+    with pytest.raises(ValueError, match='Incomplete'):
+        manifest_drops({'drops': [{'name': 'D9'}], 'files': []})
+    with pytest.raises(ValueError, match='Duplicate'):
+        manifest_drops({**MANIFEST, 'drops': MANIFEST['drops'] * 2})

@@ -1,14 +1,22 @@
 import importlib.util
+import shutil
 from pathlib import Path
 
 
-def loader(tmp_path):
+def module_loader(tmp_path):
     path = Path(__file__).resolve().parents[1] / "silver_resources.py"
+    scaffold = tmp_path / 'src/sql/units/silver_pipeline'
+    scaffold.mkdir(parents=True, exist_ok=True)
+    shutil.copy(path.parent / 'src/sql/units/silver_pipeline/silver_pipeline.job.yml', scaffold)
     spec = importlib.util.spec_from_file_location("silver_resources", path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     module.__file__ = str(tmp_path / "silver_resources.py")
-    return module.load_resources
+    return module
+
+
+def loader(tmp_path):
+    return module_loader(tmp_path).load_resources
 
 
 def test_zero_entities_has_no_pipeline(tmp_path):

@@ -1,7 +1,20 @@
 SET ANSI_MODE = true;
 
-SELECT CASE WHEN :drop IN ('D0') THEN 'Valid captured drop'
-            ELSE raise_error('Unknown captured drop') END;
+DECLARE OR REPLACE VARIABLE _landing_batch_id BIGINT;
+DECLARE OR REPLACE VARIABLE _landing_business_date DATE;
+DECLARE OR REPLACE VARIABLE _landing_counts MAP<STRING, BIGINT>;
+SET VAR (_landing_batch_id, _landing_business_date, _landing_counts) = (
+  SELECT delivery.batch_id, delivery.business_date, delivery.counts
+  FROM (
+    SELECT element_at(from_json(:manifest_drops,
+      'MAP<STRING, STRUCT<batch_id: BIGINT, business_date: DATE, counts: MAP<STRING, BIGINT>>>'),
+      :drop) AS delivery
+  )
+);
+SELECT CASE WHEN _landing_batch_id IS NOT NULL AND _landing_business_date IS NOT NULL
+                 AND size(_landing_counts) = 11
+            THEN 'Valid captured drop'
+            ELSE raise_error(concat('Unknown captured drop or invalid manifest metadata: ', coalesce(:drop, '<NULL>'))) END;
 
 CREATE TABLE IF NOT EXISTS IDENTIFIER(:catalog || '.' || :bronze_schema || '.edw_dim_account') (
   account_id INT,
@@ -44,8 +57,8 @@ SELECT CAST(NULLIF(account_id, '') AS INT) AS account_id,
        COALESCE(account_status_cd, '') AS account_status_cd,
        COALESCE(accrual_basis_cd, '') AS accrual_basis_cd,
        CAST(NULLIF(overdraft_limit, '') AS DECIMAL(18,2)) AS overdraft_limit,
-       :drop, CASE :drop WHEN 'D0' THEN CAST(20250630 AS BIGINT) END,
-       CASE :drop WHEN 'D0' THEN DATE '2025-06-30' END,
+       :drop, _landing_batch_id,
+       _landing_business_date,
        _metadata.file_path, current_timestamp()
 FROM read_files(
   :golden_path || '/inputs/' || :drop || '/nvb_edw.dim_account/nvb_edw.dim_account.csv',
@@ -97,8 +110,8 @@ SELECT CAST(NULLIF(branch_id, '') AS INT) AS branch_id,
        COALESCE(branch_type_cd, '') AS branch_type_cd,
        COALESCE(service_language_cd, '') AS service_language_cd,
        COALESCE(branch_status_cd, '') AS branch_status_cd,
-       :drop, CASE :drop WHEN 'D0' THEN CAST(20250630 AS BIGINT) END,
-       CASE :drop WHEN 'D0' THEN DATE '2025-06-30' END,
+       :drop, _landing_batch_id,
+       _landing_business_date,
        _metadata.file_path, current_timestamp()
 FROM read_files(
   :golden_path || '/inputs/' || :drop || '/nvb_edw.dim_branch/nvb_edw.dim_branch.csv',
@@ -148,8 +161,8 @@ SELECT CAST(NULLIF(calendar_date, '') AS DATE) AS calendar_date,
        CAST(NULLIF(expiry_date, '') AS DATE) AS expiry_date,
        COALESCE(calendar_name, '') AS calendar_name,
        COALESCE(business_day_rule_cd, '') AS business_day_rule_cd,
-       :drop, CASE :drop WHEN 'D0' THEN CAST(20250630 AS BIGINT) END,
-       CASE :drop WHEN 'D0' THEN DATE '2025-06-30' END,
+       :drop, _landing_batch_id,
+       _landing_business_date,
        _metadata.file_path, current_timestamp()
 FROM read_files(
   :golden_path || '/inputs/' || :drop || '/nvb_edw.dim_calendar/nvb_edw.dim_calendar.csv',
@@ -203,8 +216,8 @@ SELECT CAST(NULLIF(card_id, '') AS INT) AS card_id,
        CAST(NULLIF(card_expiry_date, '') AS DATE) AS card_expiry_date,
        COALESCE(contactless_ind, '') AS contactless_ind,
        COALESCE(online_enabled_ind, '') AS online_enabled_ind,
-       :drop, CASE :drop WHEN 'D0' THEN CAST(20250630 AS BIGINT) END,
-       CASE :drop WHEN 'D0' THEN DATE '2025-06-30' END,
+       :drop, _landing_batch_id,
+       _landing_business_date,
        _metadata.file_path, current_timestamp()
 FROM read_files(
   :golden_path || '/inputs/' || :drop || '/nvb_edw.dim_card/nvb_edw.dim_card.csv',
@@ -256,8 +269,8 @@ SELECT CAST(NULLIF(merchant_id, '') AS INT) AS merchant_id,
        COALESCE(settlement_currency_cd, '') AS settlement_currency_cd,
        COALESCE(acquirer_cd, '') AS acquirer_cd,
        COALESCE(merchant_status_cd, '') AS merchant_status_cd,
-       :drop, CASE :drop WHEN 'D0' THEN CAST(20250630 AS BIGINT) END,
-       CASE :drop WHEN 'D0' THEN DATE '2025-06-30' END,
+       :drop, _landing_batch_id,
+       _landing_business_date,
        _metadata.file_path, current_timestamp()
 FROM read_files(
   :golden_path || '/inputs/' || :drop || '/nvb_edw.dim_merchant/nvb_edw.dim_merchant.csv',
@@ -311,8 +324,8 @@ SELECT CAST(NULLIF(product_id, '') AS INT) AS product_id,
        COALESCE(product_status_cd, '') AS product_status_cd,
        COALESCE(rate_basis_cd, '') AS rate_basis_cd,
        CAST(NULLIF(minimum_balance, '') AS DECIMAL(18,2)) AS minimum_balance,
-       :drop, CASE :drop WHEN 'D0' THEN CAST(20250630 AS BIGINT) END,
-       CASE :drop WHEN 'D0' THEN DATE '2025-06-30' END,
+       :drop, _landing_batch_id,
+       _landing_business_date,
        _metadata.file_path, current_timestamp()
 FROM read_files(
   :golden_path || '/inputs/' || :drop || '/nvb_edw.dim_product/nvb_edw.dim_product.csv',
@@ -364,8 +377,8 @@ SELECT CAST(NULLIF(account_id, '') AS INT) AS account_id,
        COALESCE(currency_cd, '') AS currency_cd,
        CAST(NULLIF(accrued_interest, '') AS DECIMAL(18,2)) AS accrued_interest,
        CAST(NULLIF(reserved_amount, '') AS DECIMAL(18,2)) AS reserved_amount,
-       :drop, CASE :drop WHEN 'D0' THEN CAST(20250630 AS BIGINT) END,
-       CASE :drop WHEN 'D0' THEN DATE '2025-06-30' END,
+       :drop, _landing_batch_id,
+       _landing_business_date,
        _metadata.file_path, current_timestamp()
 FROM read_files(
   :golden_path || '/inputs/' || :drop || '/nvb_edw.fct_daily_balance/nvb_edw.fct_daily_balance.csv',
@@ -421,8 +434,8 @@ SELECT CAST(NULLIF(loan_id, '') AS INT) AS loan_id,
        CAST(NULLIF(contractual_rate, '') AS DECIMAL(6,2)) AS contractual_rate,
        COALESCE(repayment_frequency_cd, '') AS repayment_frequency_cd,
        COALESCE(collateral_type_cd, '') AS collateral_type_cd,
-       :drop, CASE :drop WHEN 'D0' THEN CAST(20250630 AS BIGINT) END,
-       CASE :drop WHEN 'D0' THEN DATE '2025-06-30' END,
+       :drop, _landing_batch_id,
+       _landing_business_date,
        _metadata.file_path, current_timestamp()
 FROM read_files(
   :golden_path || '/inputs/' || :drop || '/nvb_edw.fct_loan/nvb_edw.fct_loan.csv',
@@ -478,8 +491,8 @@ SELECT CAST(NULLIF(order_id, '') AS INT) AS order_id,
        COALESCE(decision_system_cd, '') AS decision_system_cd,
        COALESCE(currency_cd, '') AS currency_cd,
        COALESCE(manual_review_ind, '') AS manual_review_ind,
-       :drop, CASE :drop WHEN 'D0' THEN CAST(20250630 AS BIGINT) END,
-       CASE :drop WHEN 'D0' THEN DATE '2025-06-30' END,
+       :drop, _landing_batch_id,
+       _landing_business_date,
        _metadata.file_path, current_timestamp()
 FROM read_files(
   :golden_path || '/inputs/' || :drop || '/nvb_edw.fct_product_order/nvb_edw.fct_product_order.csv',
@@ -515,8 +528,8 @@ SELECT COALESCE(customer_id, '') AS customer_id,
        COALESCE(branch_id, '') AS branch_id,
        COALESCE(town, '') AS town,
        COALESCE(updated_at, '') AS updated_at,
-       :drop, CASE :drop WHEN 'D0' THEN CAST(20250630 AS BIGINT) END,
-       CASE :drop WHEN 'D0' THEN DATE '2025-06-30' END,
+       :drop, _landing_batch_id,
+       _landing_business_date,
        _metadata.file_path, current_timestamp()
 FROM read_files(
   :golden_path || '/inputs/' || :drop || '/nvb_stg.customer_feed/nvb_stg.customer_feed.csv',
@@ -554,8 +567,8 @@ SELECT COALESCE(transaction_id, '') AS transaction_id,
        COALESCE(amount, '') AS amount,
        COALESCE(channel, '') AS channel,
        COALESCE(merchant_id, '') AS merchant_id,
-       :drop, CASE :drop WHEN 'D0' THEN CAST(20250630 AS BIGINT) END,
-       CASE :drop WHEN 'D0' THEN DATE '2025-06-30' END,
+       :drop, _landing_batch_id,
+       _landing_business_date,
        _metadata.file_path, current_timestamp()
 FROM read_files(
   :golden_path || '/inputs/' || :drop || '/nvb_stg.transaction_feed/nvb_stg.transaction_feed.csv',
