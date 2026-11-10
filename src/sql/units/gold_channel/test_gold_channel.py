@@ -33,7 +33,7 @@ def test_columns_follow_legacy_ddl_order():
 
 
 def test_insert_lists_every_column_in_order():
-    select = SQL.split('REPLACE WHERE', 1)[1].split('FROM vt_channel_daily', 1)[0]
+    select = SQL.split('REPLACE WHERE', 1)[1].split('\nSELECT', 1)[1].split('FROM vt_channel_daily', 1)[0]
     lines = [line.strip().rstrip(',') for line in select.splitlines()[1:] if line.strip()]
     names = [line.split()[-1] for line in lines]
     assert names == ddl_columns()
