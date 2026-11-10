@@ -1,0 +1,240 @@
+{
+  "sources": [
+    "legacy/ddl/*.sql",
+    "legacy/schedules/nightly.yaml"
+  ],
+  "business_owners": {
+    "upstream": "Core Banking Operations",
+    "customer": "Customer Data Operations",
+    "transactions": "Payments Data Operations",
+    "dormant": "Deposit Operations",
+    "monthly_balance": "Finance Control",
+    "customer_segment": "Customer Insight",
+    "branch_league": "Branch Operations",
+    "product_profitability": "Product Finance",
+    "channel": "Digital Operations",
+    "card_category": "Card Services",
+    "close_batch": "Data Operations",
+    "reconcile": "Finance Control"
+  },
+  "tables": {
+    "nvb_edw.dim_account": {
+      "source_file": "legacy/ddl/nvb_edw.dim_account.sql",
+      "columns": {
+        "account_id": "Business identifier used by nightly reconciliation and consumer joins.",
+        "batch_id": "Delivery identifier assigned by overnight operations.",
+        "load_ts": "Logical delivery timestamp; fixed for repeatable restarts of the same delivery."
+      },
+      "comment": "Current retail banking reference attributes; corrections overwrite the current record."
+    },
+    "nvb_edw.dim_branch": {
+      "source_file": "legacy/ddl/nvb_edw.dim_branch.sql",
+      "columns": {
+        "branch_id": "Business identifier used by nightly reconciliation and consumer joins.",
+        "batch_id": "Delivery identifier assigned by overnight operations.",
+        "load_ts": "Logical delivery timestamp; fixed for repeatable restarts of the same delivery."
+      },
+      "comment": "Current retail banking reference attributes; corrections overwrite the current record."
+    },
+    "nvb_edw.dim_calendar": {
+      "source_file": "legacy/ddl/nvb_edw.dim_calendar.sql",
+      "columns": {
+        "calendar_date": "Business identifier used by nightly reconciliation and consumer joins.",
+        "batch_id": "Delivery identifier assigned by overnight operations.",
+        "load_ts": "Logical delivery timestamp; fixed for repeatable restarts of the same delivery."
+      },
+      "comment": "Current retail banking reference attributes; corrections overwrite the current record."
+    },
+    "nvb_edw.dim_card": {
+      "source_file": "legacy/ddl/nvb_edw.dim_card.sql",
+      "columns": {
+        "card_id": "Business identifier used by nightly reconciliation and consumer joins.",
+        "batch_id": "Delivery identifier assigned by overnight operations.",
+        "load_ts": "Logical delivery timestamp; fixed for repeatable restarts of the same delivery."
+      },
+      "comment": "Current retail banking reference attributes; corrections overwrite the current record."
+    },
+    "nvb_edw.dim_customer": {
+      "source_file": "legacy/ddl/nvb_edw.dim_customer.sql",
+      "columns": {
+        "customer_id": "Business identifier used by nightly reconciliation and consumer joins.",
+        "batch_id": "Delivery identifier assigned by overnight operations.",
+        "load_ts": "Logical delivery timestamp; fixed for repeatable restarts of the same delivery."
+      },
+      "comment": "Current retail banking reference attributes; corrections overwrite the current record."
+    },
+    "nvb_edw.dim_merchant": {
+      "source_file": "legacy/ddl/nvb_edw.dim_merchant.sql",
+      "columns": {
+        "merchant_id": "Business identifier used by nightly reconciliation and consumer joins.",
+        "batch_id": "Delivery identifier assigned by overnight operations.",
+        "load_ts": "Logical delivery timestamp; fixed for repeatable restarts of the same delivery."
+      },
+      "comment": "Current retail banking reference attributes; corrections overwrite the current record."
+    },
+    "nvb_edw.dim_product": {
+      "source_file": "legacy/ddl/nvb_edw.dim_product.sql",
+      "columns": {
+        "product_id": "Business identifier used by nightly reconciliation and consumer joins.",
+        "batch_id": "Delivery identifier assigned by overnight operations.",
+        "load_ts": "Logical delivery timestamp; fixed for repeatable restarts of the same delivery."
+      },
+      "comment": "Current retail banking reference attributes; corrections overwrite the current record."
+    },
+    "nvb_edw.etl_batch_control": {
+      "source_file": "legacy/ddl/nvb_edw.etl_batch_control.sql",
+      "columns": {
+        "batch_date": "Business identifier used by nightly reconciliation and consumer joins.",
+        "batch_id": "Delivery identifier assigned by overnight operations.",
+        "load_ts": "Logical delivery timestamp; fixed for repeatable restarts of the same delivery."
+      },
+      "comment": "Retail banking ledger and processing records in NOK; retained for control and reporting."
+    },
+    "nvb_edw.fct_daily_balance": {
+      "source_file": "legacy/ddl/nvb_edw.fct_daily_balance.sql",
+      "columns": {
+        "account_id": "Business identifier used by nightly reconciliation and consumer joins.",
+        "batch_id": "Delivery identifier assigned by overnight operations.",
+        "load_ts": "Logical delivery timestamp; fixed for repeatable restarts of the same delivery."
+      },
+      "comment": "Retail banking ledger and processing records in NOK; retained for control and reporting."
+    },
+    "nvb_edw.fct_loan": {
+      "source_file": "legacy/ddl/nvb_edw.fct_loan.sql",
+      "columns": {
+        "loan_id": "Business identifier used by nightly reconciliation and consumer joins.",
+        "batch_id": "Delivery identifier assigned by overnight operations.",
+        "load_ts": "Logical delivery timestamp; fixed for repeatable restarts of the same delivery."
+      },
+      "comment": "Retail banking ledger and processing records in NOK; retained for control and reporting."
+    },
+    "nvb_edw.fct_product_order": {
+      "source_file": "legacy/ddl/nvb_edw.fct_product_order.sql",
+      "columns": {
+        "order_id": "Business identifier used by nightly reconciliation and consumer joins.",
+        "batch_id": "Delivery identifier assigned by overnight operations.",
+        "load_ts": "Logical delivery timestamp; fixed for repeatable restarts of the same delivery."
+      },
+      "comment": "Retail banking ledger and processing records in NOK; retained for control and reporting."
+    },
+    "nvb_edw.fct_transaction": {
+      "source_file": "legacy/ddl/nvb_edw.fct_transaction.sql",
+      "columns": {
+        "transaction_id": "Business identifier used by nightly reconciliation and consumer joins.",
+        "batch_id": "Delivery identifier assigned by overnight operations.",
+        "load_ts": "Logical delivery timestamp; fixed for repeatable restarts of the same delivery."
+      },
+      "comment": "Retail banking ledger and processing records in NOK; retained for control and reporting."
+    },
+    "nvb_mart.mart_branch_performance": {
+      "source_file": "legacy/ddl/nvb_mart.mart_branch_performance.sql",
+      "columns": {
+        "branch_id": "Business identifier used by nightly reconciliation and consumer joins.",
+        "batch_id": "Delivery identifier assigned by overnight operations.",
+        "load_ts": "Logical delivery timestamp; fixed for repeatable restarts of the same delivery."
+      },
+      "comment": "Published retail banking control summary; released after nightly reconciliation."
+    },
+    "nvb_mart.mart_card_spend_category": {
+      "source_file": "legacy/ddl/nvb_mart.mart_card_spend_category.sql",
+      "columns": {
+        "category": "Business identifier used by nightly reconciliation and consumer joins.",
+        "batch_id": "Delivery identifier assigned by overnight operations.",
+        "load_ts": "Logical delivery timestamp; fixed for repeatable restarts of the same delivery."
+      },
+      "comment": "Published retail banking control summary; released after nightly reconciliation."
+    },
+    "nvb_mart.mart_channel_daily": {
+      "source_file": "legacy/ddl/nvb_mart.mart_channel_daily.sql",
+      "columns": {
+        "txn_date": "Business identifier used by nightly reconciliation and consumer joins.",
+        "batch_id": "Delivery identifier assigned by overnight operations.",
+        "load_ts": "Logical delivery timestamp; fixed for repeatable restarts of the same delivery."
+      },
+      "comment": "Published retail banking control summary; released after nightly reconciliation."
+    },
+    "nvb_mart.mart_customer_segment": {
+      "source_file": "legacy/ddl/nvb_mart.mart_customer_segment.sql",
+      "columns": {
+        "customer_id": "Business identifier used by nightly reconciliation and consumer joins.",
+        "batch_id": "Delivery identifier assigned by overnight operations.",
+        "load_ts": "Logical delivery timestamp; fixed for repeatable restarts of the same delivery."
+      },
+      "comment": "Published retail banking control summary; released after nightly reconciliation."
+    },
+    "nvb_mart.mart_monthly_balance": {
+      "source_file": "legacy/ddl/nvb_mart.mart_monthly_balance.sql",
+      "columns": {
+        "account_id": "Business identifier used by nightly reconciliation and consumer joins.",
+        "batch_id": "Delivery identifier assigned by overnight operations.",
+        "load_ts": "Logical delivery timestamp; fixed for repeatable restarts of the same delivery."
+      },
+      "comment": "Published retail banking control summary; released after nightly reconciliation."
+    },
+    "nvb_mart.mart_product_profitability": {
+      "source_file": "legacy/ddl/nvb_mart.mart_product_profitability.sql",
+      "columns": {
+        "product_id": "Business identifier used by nightly reconciliation and consumer joins.",
+        "batch_id": "Delivery identifier assigned by overnight operations.",
+        "load_ts": "Logical delivery timestamp; fixed for repeatable restarts of the same delivery."
+      },
+      "comment": "Published retail banking control summary; released after nightly reconciliation."
+    },
+    "nvb_stg.customer_feed": {
+      "source_file": "legacy/ddl/nvb_stg.customer_feed.sql",
+      "columns": {
+        "customer_id": "Raw upstream identifier; casting and validation occur in the integration job."
+      },
+      "comment": "Retained upstream landing delivery; replace before the nightly integration run."
+    },
+    "nvb_stg.transaction_feed": {
+      "source_file": "legacy/ddl/nvb_stg.transaction_feed.sql",
+      "columns": {
+        "transaction_id": "Raw upstream identifier; casting and validation occur in the integration job."
+      },
+      "comment": "Retained upstream landing delivery; replace before the nightly integration run."
+    }
+  },
+  "framework": {
+    "silver.etl_batch_control": {
+      "legacy_unit": "close_batch",
+      "legacy_table": "nvb_edw.etl_batch_control"
+    },
+    "silver.nightly_run_state": {
+      "legacy_unit": "close_batch",
+      "comment": "Nightly run admission and lifecycle state."
+    },
+    "silver.nightly_control_report": {
+      "legacy_unit": "close_batch",
+      "comment": "Retained transaction and nightly release control-report rows."
+    },
+    "gold.v_customer_portfolio": {
+      "legacy_unit": "customer_segment",
+      "comment": "Consumer view re-homed from legacy/views/v_customer_portfolio.sql."
+    },
+    "gold.v_credit_risk": {
+      "legacy_unit": "dormant",
+      "comment": "Consumer view re-homed from legacy/views/v_credit_risk.sql."
+    },
+    "gold.v_channel_trend": {
+      "legacy_unit": "channel",
+      "comment": "Consumer view re-homed from legacy/views/v_channel_trend.sql."
+    },
+    "gold.report_finance_monthly": {
+      "legacy_unit": "monthly_balance",
+      "comment": "Consumer view re-homed from reports/finance_monthly.sql."
+    },
+    "gold.report_branch_league": {
+      "legacy_unit": "branch_league",
+      "comment": "Consumer view re-homed from reports/branch_league.sql."
+    },
+    "gold.report_card_services": {
+      "legacy_unit": "card_category",
+      "comment": "Consumer view re-homed from reports/card_services.sql."
+    },
+    "gold.report_risk_arrears": {
+      "legacy_unit": "dormant",
+      "comment": "Consumer view re-homed from reports/risk_arrears.sql."
+    }
+  }
+}
