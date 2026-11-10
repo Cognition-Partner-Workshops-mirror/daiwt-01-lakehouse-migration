@@ -41,10 +41,9 @@ def load_resources(bundle):
 def configure_silver_job(bundle, job):
     if (job.tags or {}).get('migration_unit') != 'silver_pipeline' or not pipeline_files():
         return job
-    root = Path(__file__).parent
     definition = job.as_dict()
     verify = definition['tasks'][0]
-    verify['spark_python_task']['python_file'] = str(root / 'src/parity/parity_check.py')
+    verify['spark_python_task']['python_file'] = 'src/parity/parity_check.py'
     verify['depends_on'] = [{'task_key': 'refresh_silver'}]
     definition['tasks'].insert(0, {
         'task_key': 'refresh_silver',
