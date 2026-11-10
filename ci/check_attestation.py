@@ -12,7 +12,10 @@ from registry import load_at
 from record_attestation import COLUMNS, TABLE, Warehouse, table_name
 
 
-def evaluate(rows, head_sha, required_units, fingerprint_fn=fingerprint):
+def evaluate(rows, head_sha, required_units, fingerprint_fn=fingerprint, suffix=None):
+    latest = next((row for row in rows if suffix is not None and row.get('suffix') == suffix), None)
+    if latest is not None and latest.get('status') != 'PASS':
+        return None, f"newest attestation for {suffix} is {latest.get('status')}"
     reasons = []
     for row in rows:
         try:
@@ -47,9 +50,12 @@ def check(head, base, suffix, query, fingerprint_fn=fingerprint, classify_fn=cla
     while True:
         try:
             rows = query(fp, suffix)
-            row, reason = evaluate(rows, head, required['units'], fingerprint_fn)
+            row, reason = evaluate(rows, head, required['units'], fingerprint_fn, suffix=suffix)
             if row:
                 return True, row['attestation_md']
+            latest = next((row for row in rows if row.get('suffix') == suffix), None)
+            if latest is not None and latest.get('status') != 'PASS':
+                break
         except Exception as exc:
             reason = f'attestation query failed: {exc}'
         remaining = deadline - clock()
@@ -77,7 +83,7 @@ def main():
             warehouse = Warehouse(WorkspaceClient(), '6dc4b80538621b7b')
             data = warehouse.sql(
                 f"SELECT {', '.join(COLUMNS)} FROM {table_name(TABLE)} "
-                "WHERE status = 'PASS' AND (fingerprint = :fp OR suffix = :suffix) "
+                "WHERE suffix = :suffix OR (status = 'PASS' AND fingerprint = :fp) "
                 "ORDER BY recorded_at DESC", {'fp': fp, 'suffix': suffix})
             return [dict(zip(COLUMNS, row)) for row in data]
 

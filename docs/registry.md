@@ -69,8 +69,10 @@ by the sorted expanded unit list. It is content-addressed, not commit-addressed:
 rebasing over docs or unrelated unit additions preserves it, whereas shared or
 upstream changes invalidate it.
 
-PR CI never deploys. It queries PASS evidence by required-set fingerprint or PR
-suffix, newest first, and accepts the first row with a superset of required units,
+PR CI never deploys. It queries all evidence for the PR suffix plus PASS evidence
+by required-set fingerprint, newest first. A non-PASS newest row for this suffix
+fails immediately, even if an earlier reusable PASS exists. Otherwise it accepts
+the first PASS row with a superset of required units,
 D0 PASS and a fingerprint matching the current head for that row's full unit set.
 The check polls for up to 30 minutes; missing, malformed or stale evidence then
 fails closed with a builder command. Selections without golden outputs skip

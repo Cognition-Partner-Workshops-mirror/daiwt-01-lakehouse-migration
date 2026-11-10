@@ -126,6 +126,38 @@ def test_accept_first_valid_row_and_no_rows():
     assert evaluate([], 'head', [], lambda *_: 'current')[0] is None
 
 
+def test_newest_suffix_failure_overrides_earlier_pass():
+    earlier = evidence(suffix='pr_1', recorded_at='2026-01-01T00:00:00Z')
+    later = {**earlier, 'status': 'FAIL', 'recorded_at': '2026-01-01T00:01:00Z'}
+    other = evidence(suffix='pr_2', recorded_at='2026-01-01T00:00:30Z')
+    rows = [later, other, earlier]
+    accepted, reason = evaluate(rows, 'head', ['a'], lambda *_: 'current', suffix='pr_1')
+    assert accepted is None and 'newest attestation for pr_1 is FAIL' in reason
+    ok, body = check('head', 'base', 'pr_1', lambda *_: rows, lambda *_: 'current',
+                     classify_fn=lambda *_: {'required': True, 'units': ['a']},
+                     registry_fn=lambda _: {'a': {'outputs': ['gold.sales']}}, timeout=1800,
+                     sleep=lambda _: pytest.fail('known failed evidence must fail immediately'))
+    assert not ok and 'newest attestation for pr_1 is FAIL' in body
+
+
+def test_matching_fingerprint_pass_from_other_suffix_is_reusable():
+    row = evidence(suffix='pr_2')
+    accepted, reason = evaluate([row], 'head', ['a'], lambda *_: 'current', suffix='pr_1')
+    assert accepted == row and reason == 'PASS'
+    older_failure = {**row, 'suffix': 'pr_1', 'status': 'FAIL'}
+    newer_pass = {**row, 'suffix': 'pr_1'}
+    accepted, reason = evaluate([newer_pass, older_failure], 'head', ['a'], lambda *_: 'current', suffix='pr_1')
+    assert accepted == newer_pass and reason == 'PASS'
+
+
+def test_query_keeps_all_statuses_for_current_suffix():
+    import inspect
+    import check_attestation
+    source = inspect.getsource(check_attestation.main)
+    assert "WHERE suffix = :suffix OR (status = 'PASS' AND fingerprint = :fp)" in source
+    assert 'ORDER BY recorded_at DESC' in source
+
+
 def test_injectable_check_and_no_query_for_ignored():
     calls = []
     def query(fp, suffix):
