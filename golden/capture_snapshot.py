@@ -281,7 +281,7 @@ def file_entry(root, path, **extra):
     return {"path": str(path.relative_to(root)), "sha256": digest(path), "bytes": path.stat().st_size, **extra}
 
 
-def build_manifest(root, legacy, commit, captured_at, legacy_run, s3, evidence, s3_manifest):
+def build_manifest(root, legacy, commit, captured_at, legacy_run, s3, evidence, s3_manifest, repo=LEGACY_REPO):
     drop = DROP["name"]
     files = []
     for table in INPUTS:
@@ -318,7 +318,7 @@ def build_manifest(root, legacy, commit, captured_at, legacy_run, s3, evidence, 
                          "(golden/compute_baselines.py transform()), which the legacy README states implement "
                          "the same joins, windows and calculations as the nightly BTEQ. "
                          "They are not the result of a Teradata execution.",
-            "legacy_repo": LEGACY_REPO.removesuffix(".git"),
+            "legacy_repo": repo.removesuffix(".git"),
             "legacy_commit": commit,
             "legacy_run": legacy_run,
             "generator": "data/generate.py",
@@ -386,7 +386,7 @@ def capture(root, repo, commit, captured_at, s3_manifest=None):
     for table in INPUTS:
         if evidence["input_parquet_rows"][table] != s3[table]["rows"]:
             raise ValueError(f"{table}: Parquet rows differ from delivery manifest")
-    manifest = build_manifest(root, legacy, commit, captured_at, legacy_run, s3, evidence, s3_manifest)
+    manifest = build_manifest(root, legacy, commit, captured_at, legacy_run, s3, evidence, s3_manifest, repo)
     versions = subprocess.run([str(legacy / ".venv/bin/python"), "-c",
                                "import sys,pandas,numpy,pyarrow;print(sys.version.split()[0],pandas.__version__,numpy.__version__,pyarrow.__version__)"],
                               check=True, capture_output=True, text=True).stdout.split()

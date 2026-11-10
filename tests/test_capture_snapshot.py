@@ -141,6 +141,9 @@ def synthetic_capture(tmp_path):
     s3_manifest.write_text(json.dumps(entries))
     manifest = capture.build_manifest(root, legacy, "a" * 40, "2026-11-10T16:21:54Z", {}, s3,
                                       {"outputs": outputs}, s3_manifest)
+    other = capture.build_manifest(root, legacy, "a" * 40, "2026-11-10T16:21:54Z", {}, s3,
+                                   {"outputs": outputs}, s3_manifest, "https://example.com/fork.git")
+    assert other["source"]["legacy_repo"] == "https://example.com/fork"
     return root, manifest
 
 
@@ -157,6 +160,7 @@ def test_manifest_matches_harness_layout(tmp_path):
     root, manifest = synthetic_capture(tmp_path)
     assert manifest["capture_id"] == "20261110T162154Z" and manifest["capture_mode"] == "snapshot"
     assert manifest["source"]["generator_seed"] == 1704
+    assert manifest["source"]["legacy_repo"] == capture.LEGACY_REPO.removesuffix(".git")
     assert manifest_drops(manifest) == ["D0"]
     outputs = output_entries(manifest, "D0")
     assert len(outputs) == 10 and all(e["columns"][-1] == "v" for e in outputs)
