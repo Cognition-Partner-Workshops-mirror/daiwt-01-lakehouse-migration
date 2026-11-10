@@ -28,15 +28,36 @@ def run(*args, **kwargs):
     return run_parity(*args, contract=CONTRACT, **kwargs)
 
 
-def test_unpromoted_capture_has_empty_contract():
+@pytest.mark.parametrize("catalog", ["daiwt_01_mig_dev", "daiwt_01_mig_prod"])
+def test_captured_contract_skips_every_unmigrated_output(catalog):
+    from test_capture_snapshot import units_for
+
     manifest = json.loads((ROOT / "golden/manifest.json").read_text())
     contract = json.loads((ROOT / "src/parity/contract.json").read_text())
+    registry = json.loads((ROOT / "src/sql/units/registry.json").read_text())
     assert manifest["capture_mode"] == "snapshot"
-    assert contract == {"outputs": []}
-    result = run_parity(client(error=NotFound("staged, not promoted")), "daiwt_01_mig_dev", "pr_1", "w", {},
-                        contract=contract)
-    assert result["status"] == "PASS"
-    assert result["goldens"] == result["compared"] == 0
+    assert registry == {}
+    assert contract == build(manifest, units_for(manifest))
+    captured = [entry for entry in manifest["files"] if entry["path"].startswith("outputs/")]
+    assert len(captured) == len(contract["outputs"]) == 10
+    assert {entry["path"] for entry in captured} == {entry["path"] for entry in contract["outputs"]}
+
+    def download(path):
+        assert path.endswith("/manifest.json"), "unmigrated output must not read golden CSVs"
+        return client(manifest).files.download(path)
+
+    offline = client(manifest)
+    offline.files.download = download
+    for drop in {entry["drop"] for entry in contract["outputs"]}:
+        result = run_parity(offline, catalog, "pr_1", "w", registry, drop)
+        assert result["status"] == "PASS"
+        assert result["goldens"] == 10 and result["compared"] == 0
+        assert result["counts"] == {"PASS": 0, "FAIL": 0, "SKIP": 10}
+        assert {row["table"] for row in result["results"]} == {entry["table"] for entry in captured}
+        assert all(row["status"] == "SKIP" and row["reason"] == "not yet migrated"
+                   for row in result["results"])
+        for row in result["results"]:
+            print(f"{catalog} {drop} {row['table']}: {row['status']} {row['reason']}")
 
 
 
