@@ -43,7 +43,9 @@ CREATE OR REPLACE TABLE IDENTIFIER(:catalog || '.' || :gold_schema || '.mart_mon
   record_status_cd STRING,
   effective_date DATE,
   expiry_date DATE
-) AS
+);
+
+INSERT INTO IDENTIFIER(:catalog || '.' || :gold_schema || '.mart_monthly_balance')
 SELECT
   account_id,
   month_start,
