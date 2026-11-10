@@ -1,0 +1,49 @@
+resources:
+  jobs:
+    gold_monthly_balance:
+      name: ${var.job_name_prefix}gold_monthly_balance
+      max_concurrent_runs: 1
+      parameters:
+        - name: drop
+          default: D0
+        - name: window_start
+          default: "2024-01-01"
+        - name: as_of_date
+          default: "2025-06-30"
+        - name: batch_id
+          default: "20250630"
+        - name: load_ts
+          default: "2025-06-30 23:00:00"
+      tags:
+        environment: ${bundle.target}
+        migration_unit: gold_monthly_balance
+      tasks:
+        - task_key: build_mart_monthly_balance
+          max_retries: 0
+          sql_task:
+            warehouse_id: ${var.warehouse_id}
+            file:
+              path: ./monthly_balance.sql
+              source: WORKSPACE
+            parameters:
+              catalog: ${var.catalog}
+              silver_schema: ${var.silver_schema}
+              gold_schema: ${var.gold_schema}
+              window_start: "{{job.parameters.window_start}}"
+              as_of_date: "{{job.parameters.as_of_date}}"
+              batch_id: "{{job.parameters.batch_id}}"
+              load_ts: "{{job.parameters.load_ts}}"
+        - task_key: verify_mart_monthly_balance
+          max_retries: 0
+          depends_on:
+            - task_key: build_mart_monthly_balance
+          sql_task:
+            warehouse_id: ${var.warehouse_id}
+            file:
+              path: ./verify_monthly_balance.sql
+              source: WORKSPACE
+            parameters:
+              catalog: ${var.catalog}
+              gold_schema: ${var.gold_schema}
+              golden_path: ${var.golden_path}
+              drop: "{{job.parameters.drop}}"
