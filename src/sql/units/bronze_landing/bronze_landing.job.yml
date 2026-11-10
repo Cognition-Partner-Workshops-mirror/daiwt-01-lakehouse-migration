@@ -1,0 +1,38 @@
+resources:
+  jobs:
+    bronze_landing:
+      name: ${var.job_name_prefix}bronze_landing
+      parameters:
+        - name: drop
+          default: D0
+      tags:
+        environment: ${bundle.target}
+      tasks:
+        - task_key: load_inputs
+          sql_task:
+            warehouse_id: ${var.warehouse_id}
+            file:
+              path: ./load.sql
+              source: WORKSPACE
+            parameters:
+              catalog: ${var.catalog}
+              bronze_schema: ${var.bronze_schema}
+              silver_schema: ${var.silver_schema}
+              gold_schema: ${var.gold_schema}
+              golden_path: ${var.golden_path}
+              drop: "{{job.parameters.drop}}"
+        - task_key: check_inputs
+          depends_on:
+            - task_key: load_inputs
+          sql_task:
+            warehouse_id: ${var.warehouse_id}
+            file:
+              path: ./self_check.sql
+              source: WORKSPACE
+            parameters:
+              catalog: ${var.catalog}
+              bronze_schema: ${var.bronze_schema}
+              silver_schema: ${var.silver_schema}
+              gold_schema: ${var.gold_schema}
+              golden_path: ${var.golden_path}
+              drop: "{{job.parameters.drop}}"

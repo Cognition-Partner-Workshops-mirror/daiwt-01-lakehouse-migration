@@ -1,0 +1,7 @@
+{
+  "job": "sql_macros",
+  "legacy_unit": "customer",
+  "outputs": [],
+  "owns": [],
+  "depends_on": []
+}

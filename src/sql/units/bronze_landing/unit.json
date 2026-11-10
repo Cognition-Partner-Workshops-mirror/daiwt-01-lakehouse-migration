@@ -1,0 +1,19 @@
+{
+  "job": "bronze_landing",
+  "legacy_unit": "customer",
+  "outputs": [],
+  "owns": [
+    "bronze.edw_dim_account",
+    "bronze.edw_dim_branch",
+    "bronze.edw_dim_calendar",
+    "bronze.edw_dim_card",
+    "bronze.edw_dim_merchant",
+    "bronze.edw_dim_product",
+    "bronze.edw_fct_daily_balance",
+    "bronze.edw_fct_loan",
+    "bronze.edw_fct_product_order",
+    "bronze.stg_customer_feed",
+    "bronze.stg_transaction_feed"
+  ],
+  "depends_on": []
+}
