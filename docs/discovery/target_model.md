@@ -156,16 +156,16 @@ counts, numeric sums, date min/max, code value counts; produced by `golden/compu
 
 | Silver table | Legacy DDL | Grain / key | Columns -> Delta type | Temporal handling | Source | Consumers | Golden | Proposed unit |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `silver.dim_branch` | `nvb_edw.dim_branch.sql:7-21` | branch_id (8) | branch_id INT, town STRING, 2.1 cols, branch_name, region_cd, branch_type_cd, service_language_cd, branch_status_cd STRING | current-state overwrite per delivery | `bronze.dim_branch` | 01 FK check, 06, `flag_dormant` cursor, views, reports | none (controls `nvb_edw.dim_branch.json`) | `reference` |
-| `silver.dim_product` | `nvb_edw.dim_product.sql:7-22` | product_id (4) | product_id INT, product_name STRING, annual_rate DECIMAL(6,2), 2.1, product_family_cd, currency_cd, product_status_cd, rate_basis_cd STRING, minimum_balance DECIMAL(18,2) | overwrite | `bronze.dim_product` | 07 | none (controls) | `reference` |
-| `silver.dim_merchant` | `nvb_edw.dim_merchant.sql:7-21` | merchant_id (80) | merchant_id INT, merchant_name STRING, category STRING, 2.1, country_cd, settlement_currency_cd, acquirer_cd, merchant_status_cd STRING | overwrite | `bronze.dim_merchant` | 02 FK check, 09 | none (controls) | `reference` |
-| `silver.dim_calendar` | `nvb_edw.dim_calendar.sql:7-20` | calendar_date (547) | calendar_date DATE, month_start DATE, year_no INT, month_no INT, 2.1, calendar_name, business_day_rule_cd STRING | overwrite | `bronze.dim_calendar` | 08 check + `channel_daily` inner join, `v_channel_trend` | none (controls) | `reference` |
-| `silver.dim_card` | `nvb_edw.dim_card.sql:7-22` | card_id (6000) | card_id INT, account_id INT, card_type STRING, 2.1, network_cd, card_status_cd STRING, card_expiry_date DATE, contactless_ind, online_enabled_ind STRING | overwrite | `bronze.dim_card` | none in legacy SQL (no reference in bteq/procs/macros/views/reports) | none (controls) | `reference` |
-| `silver.fct_daily_balance` | `nvb_edw.fct_daily_balance.sql:7-22` | (account_id, balance_date) (4,376,000) | account_id INT, balance_date DATE, balance DECIMAL(18,2), 2.1, balance_type_cd, currency_cd STRING, accrued_interest, reserved_amount DECIMAL(18,2) | full replace per delivery; completeness control: every account-month has every day through calendar month-end (`04_monthly_balance.btq:26-39`, `runbook.md:51-52`) | `bronze.fct_daily_balance` | 04, 07 | none (controls) | `reference` |
-| `silver.fct_loan` | `nvb_edw.fct_loan.sql:7-23` | loan_id (1800) | loan_id INT, account_id INT, outstanding DECIMAL(18,2), arrears_days INT, 2.1, loan_status_cd, currency_cd STRING, contractual_rate DECIMAL(6,2), repayment_frequency_cd, collateral_type_cd STRING | full replace | `bronze.fct_loan` | `v_credit_risk` -> `reports/risk_arrears.sql` | none (controls) | `reference` |
-| `silver.fct_product_order` | `nvb_edw.fct_product_order.sql:7-23` | order_id (3500) | order_id INT, customer_id INT, product_id INT, order_date DATE, status STRING, 2.1, application_channel_cd, decision_system_cd, currency_cd, manual_review_ind STRING | full replace | `bronze.fct_product_order` | none in legacy SQL | none (controls) | `reference` |
+| `silver.dim_branch` | `nvb_edw.dim_branch.sql:7-21` | branch_id (8) | branch_id INT, town STRING, 2.1 cols, branch_name, region_cd, branch_type_cd, service_language_cd, branch_status_cd STRING | current-state overwrite per delivery | `bronze.dim_branch` | 01 FK check, 06, `flag_dormant` cursor, views, reports | none (controls `nvb_edw.dim_branch.json`) | `branch` |
+| `silver.dim_product` | `nvb_edw.dim_product.sql:7-22` | product_id (4) | product_id INT, product_name STRING, annual_rate DECIMAL(6,2), 2.1, product_family_cd, currency_cd, product_status_cd, rate_basis_cd STRING, minimum_balance DECIMAL(18,2) | overwrite | `bronze.dim_product` | 07 | none (controls) | `product` |
+| `silver.dim_merchant` | `nvb_edw.dim_merchant.sql:7-21` | merchant_id (80) | merchant_id INT, merchant_name STRING, category STRING, 2.1, country_cd, settlement_currency_cd, acquirer_cd, merchant_status_cd STRING | overwrite | `bronze.dim_merchant` | 02 FK check, 09 | none (controls) | `merchant` |
+| `silver.dim_calendar` | `nvb_edw.dim_calendar.sql:7-20` | calendar_date (547) | calendar_date DATE, month_start DATE, year_no INT, month_no INT, 2.1, calendar_name, business_day_rule_cd STRING | overwrite | `bronze.dim_calendar` | 08 check + `channel_daily` inner join, `v_channel_trend` | none (controls) | `calendar` |
+| `silver.dim_card` | `nvb_edw.dim_card.sql:7-22` | card_id (6000) | card_id INT, account_id INT, card_type STRING, 2.1, network_cd, card_status_cd STRING, card_expiry_date DATE, contactless_ind, online_enabled_ind STRING | overwrite | `bronze.dim_card` | none in legacy SQL (no reference in bteq/procs/macros/views/reports) | none (controls) | `card` |
+| `silver.fct_daily_balance` | `nvb_edw.fct_daily_balance.sql:7-22` | (account_id, balance_date) (4,376,000) | account_id INT, balance_date DATE, balance DECIMAL(18,2), 2.1, balance_type_cd, currency_cd STRING, accrued_interest, reserved_amount DECIMAL(18,2) | full replace per delivery; completeness control: every account-month has every day through calendar month-end (`04_monthly_balance.btq:26-39`, `runbook.md:51-52`) | `bronze.fct_daily_balance` | 04, 07 | none (controls) | `daily_balance` |
+| `silver.fct_loan` | `nvb_edw.fct_loan.sql:7-23` | loan_id (1800) | loan_id INT, account_id INT, outstanding DECIMAL(18,2), arrears_days INT, 2.1, loan_status_cd, currency_cd STRING, contractual_rate DECIMAL(6,2), repayment_frequency_cd, collateral_type_cd STRING | full replace | `bronze.fct_loan` | `v_credit_risk` -> `reports/risk_arrears.sql` | none (controls) | `loan` |
+| `silver.fct_product_order` | `nvb_edw.fct_product_order.sql:7-23` | order_id (3500) | order_id INT, customer_id INT, product_id INT, order_date DATE, status STRING, 2.1, application_channel_cd, decision_system_cd, currency_cd, manual_review_ind STRING | full replace | `bronze.fct_product_order` | none in legacy SQL | none (controls) | `product_order` |
 
-[inference] One `reference` silver unit (Wave 2, or folded into the Wave 1 silver pipeline scaffold) owns all eight;
+[inference] Each of the eight gets its own Wave 2 silver entity unit (`branch`, `product`, `merchant`, `calendar`, `card`, `daily_balance`, `loan`, `product_order`; see [units.json](units.json));
 contract unit names are fixed and none of the ten covers them. Referential integrity [verified on D0]: every payment
 account and merchant exists; every account's customer is in the customer feed; every loan account exists; every order
 customer exists; 0 orphans.
@@ -202,10 +202,10 @@ Compute averages from `DECIMAL(28,6)` (or exact cents) and cast once; do not ave
 | `gold.v_customer_portfolio` (UC view) | `legacy/views/v_customer_portfolio.sql:1-22` | customer (active), joined to branch, accounts, segment | `ZEROIFNULL(MAX(s.spend))` -> `coalesce(max(spend),0)`; `MAX(c.load_ts)` passes through | 5000 rows | `business_views` |
 | `gold.v_credit_risk` (UC view) | `legacy/views/v_credit_risk.sql:1-23` | (customer_id, customer_name, branch_town) | `NULLIFZERO` -> `nullif(x,0)`; ratio scale must be set explicitly (Teradata vs Databricks decimal division scale differ) | 1800 rows (1 loan per account 1..1800, 1 account per customer in that range); bands IMPAIRED 329 / WATCH 314 / PERFORMING 1157 | `business_views` |
 | `gold.v_channel_trend` (UC view) | `legacy/views/v_channel_trend.sql:1-21` | calendar day (MOBILE channel only, `:7,20`) | `CSUM(x, d)` -> `sum(x) over (order by d rows unbounded preceding)`; `MAVG(x,7,d)` -> `avg(x) over (order by d rows between 6 preceding and current row)`; `ZEROIFNULL`/`NULLIFZERO` | 547 rows | `business_views` |
-| `gold.report_branch_league` (view) | `reports/branch_league.sql:2-4` | branch, ordered by league_rank | `SEL` -> `SELECT` | 8 rows | `reports` |
-| `gold.report_card_services` (view) | `reports/card_services.sql:2-3` | category | `NULLIFZERO`, `SUM() OVER ()` | 4 rows | `reports` |
-| `gold.report_finance_monthly` (view) | `reports/finance_monthly.sql:2-4` | month_start in 2025 | `EXTRACT(YEAR FROM ...)` unchanged | 6 rows | `reports` |
-| `gold.report_risk_arrears` (view) | `reports/risk_arrears.sql:2-3` | customer with impaired_ratio > 0 | - | 329 rows | `reports` |
+| `gold.report_branch_league` (view) | `reports/branch_league.sql:2-4` | branch, ordered by league_rank | `SEL` -> `SELECT` | 8 rows | `business_views` |
+| `gold.report_card_services` (view) | `reports/card_services.sql:2-3` | category | `NULLIFZERO`, `SUM() OVER ()` | 4 rows | `business_views` |
+| `gold.report_finance_monthly` (view) | `reports/finance_monthly.sql:2-4` | month_start in 2025 | `EXTRACT(YEAR FROM ...)` unchanged | 6 rows | `business_views` |
+| `gold.report_risk_arrears` (view) | `reports/risk_arrears.sql:2-3` | customer with impaired_ratio > 0 | - | 329 rows | `business_views` |
 
 The BTEQ "display" SELECTs at the end of each job (e.g. `08_channel.btq:48-50` average payment, `09_card_category.btq:47-49`
 share of debit spend, `04_monthly_balance.btq:50-51`) and the export files (`02_transactions.btq:68-71`,
@@ -234,19 +234,18 @@ share of debit spend, `04_monthly_balance.btq:50-51`) and the export files (`02_
 | Unit | Wave | Owns | Golden outputs | Depends on |
 | --- | --- | --- | --- | --- |
 | `bronze_landing` | 1 | 11 `bronze.*` tables (section 3) | none (manifest row counts / checksums) | - |
-| `reference` | 1-2 | `silver.dim_branch, dim_product, dim_merchant, dim_calendar, dim_card, fct_daily_balance, fct_loan, fct_product_order` | none (controls metrics) | `bronze_landing` |
-| `customer` | 2 | `silver.dim_customer` | `silver.dim_customer` | `bronze_landing`, `reference` |
-| `transactions` | 2 | `silver.fct_transaction` | `silver.fct_transaction` | `bronze_landing`, `reference` |
-| `dormant` | 2 | `silver.dim_account` | `silver.dim_account` | `bronze_landing`, `customer`, `transactions` |
-| `monthly_balance` | 3 | `gold.mart_monthly_balance` | same | `reference`, `dormant` |
+| `branch` / `product` / `merchant` / `calendar` / `card` / `daily_balance` / `loan` / `product_order` | 2 | one `silver.<table>` each: `dim_branch`, `dim_product`, `dim_merchant`, `dim_calendar`, `dim_card`, `fct_daily_balance`, `fct_loan`, `fct_product_order` | none (controls metrics) | `bronze_landing` |
+| `customer` | 2 | `silver.dim_customer` | `silver.dim_customer` | `bronze_landing`, `sql_macros`, `branch` |
+| `transactions` | 2 | `silver.fct_transaction` | `silver.fct_transaction` | `bronze_landing`, `sql_macros`, `merchant` |
+| `dormant` | 2 | `silver.dim_account` | `silver.dim_account` | `bronze_landing`, `customer`, `transactions`, `branch` |
+| `monthly_balance` | 3 | `gold.mart_monthly_balance` | same | `daily_balance`, `dormant` |
 | `customer_segment` | 3 | `gold.mart_customer_segment` | same | `customer`, `dormant`, `transactions` |
-| `branch_league` | 3 | `gold.mart_branch_performance` | same | `customer`, `dormant`, `transactions` |
-| `product_profitability` | 3 | `gold.mart_product_profitability` | same | `reference`, `dormant` |
-| `channel` | 3 | `gold.mart_channel_daily` | same | `transactions`, `reference` |
-| `card_category` | 3 | `gold.mart_card_spend_category` | same | `transactions`, `reference` |
+| `branch_league` | 3 | `gold.mart_branch_performance` | same | `customer`, `dormant`, `transactions`, `branch` |
+| `product_profitability` | 3 | `gold.mart_product_profitability` | same | `daily_balance`, `dormant`, `product` |
+| `channel` | 3 | `gold.mart_channel_daily` | same | `transactions`, `calendar` |
+| `card_category` | 3 | `gold.mart_card_spend_category` | same | `transactions`, `merchant` |
 | `close_batch` | 3 | `silver.etl_batch_control` | same | `transactions`, `channel` (and all marts, per `nightly.yaml:90-97`) |
-| `business_views` | 3 | `gold.v_customer_portfolio`, `gold.v_credit_risk`, `gold.v_channel_trend` | none (6.2) | `customer_segment`, `channel`, `dormant`, `reference` |
-| `reports` | 3 | `gold.report_*` (4) | none (6.2) | `branch_league`, `card_category`, `monthly_balance`, `business_views` |
+| `business_views` | 3 | `gold.v_customer_portfolio`, `gold.v_credit_risk`, `gold.v_channel_trend`, `gold.report_*` (4) | none (6.2) | `customer`, `branch`, `dormant`, `loan`, `calendar`, `customer_segment`, `branch_league`, `monthly_balance`, `channel`, `card_category` |
 
 Dependency note: legacy `dim_account` is used *before* dormancy recomputation by jobs 02 (FK check) and is otherwise
 consumed only after job 03; no consumer reads `dormant_flag` except `v_customer_portfolio.sql:10`. [inference]
