@@ -1,3 +1,4 @@
 databricks-sdk>=0.85,<1
+databricks-bundles==1.25.0
 pytest>=8,<10
 PyYAML>=6,<7
