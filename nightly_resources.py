@@ -104,6 +104,8 @@ def build_job(registry, manifest, contract, root=ROOT):
         sql_task('release_export', 'release_export.sql', {owners[table] for table in controls})
         sql_task('reconcile', 'reconcile.sql', {'release_export'})
     for name, requirements in VIEWS.items():
+        if 'gold.' + name in owners:
+            continue
         if all(table in owners for table in requirements):
             needs = {owners[table] for table in requirements}
             if 'reconcile' in tasks:

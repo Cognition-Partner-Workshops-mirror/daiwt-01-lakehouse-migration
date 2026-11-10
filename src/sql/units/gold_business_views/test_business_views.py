@@ -28,7 +28,8 @@ def test_unit_json():
     reserved = {'batch_open', 'batch_fail', 'release_export', 'reconcile', *nightly.VIEWS}
     assert UNIT['job'] not in reserved
     assert set(checks.OBJECTS) == set(nightly.VIEWS)
-    assert not {'gold.' + name for name in checks.OBJECTS} & set(UNIT['outputs'] + UNIT['owns'])
+    assert {'gold.' + name for name in checks.OBJECTS} == set(UNIT['owns'])
+    assert UNIT['outputs'] == []
 
 
 def test_job_uses_bundle_variables():

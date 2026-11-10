@@ -6,6 +6,7 @@ from types import SimpleNamespace
 
 import pytest
 from databricks.bundles.jobs import Job
+from registry import load
 
 ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location('nightly_resources', ROOT / 'nightly_resources.py')
@@ -102,6 +103,32 @@ def test_governance_is_last_non_failure_task_and_waits_for_all():
     assert set(nightly.VIEWS) <= deps(generated['governance'])
 
 
+def test_real_registry_publish_gates():
+    registry = load(ROOT)
+    generated = tasks(registry)
+    assert generated['governance']['run_if'] == 'NONE_FAILED'
+    assert deps(generated['governance']) == set(generated) - {'governance', 'batch_fail'}
+    assert {spec['job'] for spec in registry.values()} <= set(generated)
+    assert generated['batch_fail']['run_if'] == 'AT_LEAST_ONE_FAILED'
+    assert deps(generated['batch_fail']) == set(generated) - {'batch_fail'}
+
+
+def test_all_contract_units_and_publish_gates_precede_governance():
+    registry = full_registry()
+    registry['governance'] = unit('governance')
+    assert {entry['unit'] for entry in CONTRACT['outputs']} == set(nightly.LEGACY_ORDER)
+    assert {entry['table'] for entry in CONTRACT['outputs']} == {
+        table for spec in registry.values() for table in spec['outputs']}
+    generated = tasks(registry)
+    gates = {spec['job'] for spec in registry.values()} - {'governance'}
+    gates |= {'release_export', 'reconcile', *nightly.VIEWS}
+    assert gates <= deps(generated['governance'])
+    assert generated['governance']['run_if'] == 'NONE_FAILED'
+    assert deps(generated['governance']) == set(generated) - {'governance', 'batch_fail'}
+    assert generated['batch_fail']['run_if'] == 'AT_LEAST_ONE_FAILED'
+    assert deps(generated['batch_fail']) == set(generated) - {'batch_fail'}
+
+
 def test_conditional_controls_and_views_require_every_producer():
     registry = full_registry()
     generated = tasks(registry)
@@ -123,6 +150,38 @@ def test_conditional_controls_and_views_require_every_producer():
                     assert name not in reduced_tasks
     registry['close_batch']['outputs'] = []
     assert not {'release_export', 'reconcile'}.intersection(tasks(registry))
+
+
+@pytest.mark.parametrize('field', ['owns', 'outputs'])
+def test_registered_view_owner_replaces_framework_publisher_and_dependencies(field):
+    registry = full_registry()
+    registry['view_owner'] = unit('view_owner', **{field: ['gold.v_credit_risk']})
+    registry['governance'] = unit('governance')
+    generated = tasks(registry)
+    assert 'v_credit_risk' not in generated
+    assert 'view_owner' in deps(generated['report_risk_arrears'])
+    assert 'v_credit_risk' not in deps(generated['report_risk_arrears'])
+    assert set(nightly.VIEWS) - {'v_credit_risk'} <= set(generated)
+    assert deps(generated['governance']) == set(generated) - {'governance', 'batch_fail'}
+    assert generated['governance']['run_if'] == 'NONE_FAILED'
+
+
+def test_unowned_views_keep_one_framework_publisher():
+    generated = tasks(full_registry())
+    for name in nightly.VIEWS:
+        assert generated[name]['sql_task']['parameters']['view_sql'].startswith(
+            'CREATE OR REPLACE VIEW {gold}.' + name)
+    assert 'v_credit_risk' in deps(generated['report_risk_arrears'])
+
+
+def test_real_registry_has_one_registered_business_view_publisher():
+    registry = load(ROOT)
+    generated = tasks(registry)
+    assert not set(nightly.VIEWS) & set(generated)
+    for name in nightly.VIEWS:
+        assert [spec['job'] for spec in registry.values()
+                if 'gold.' + name in spec['owns'] + spec['outputs']] == ['gold_business_views']
+    assert 'gold_business_views' in deps(generated['governance'])
 
 
 def test_registered_view_reads_match_declared_requirements():
