@@ -169,8 +169,9 @@ def main():
     print(f"{result['status']} full D0: {result['counts']}")
     if result.get('error'):
         print(result['error'])
-    return 0 if result['status'] == 'PASS' else 1
+    if result['status'] != 'PASS':
+        raise RuntimeError(result.get('error') or 'Full D0 verification failed')
 
 
 if __name__ == '__main__':
-    raise SystemExit(main())
+    main()

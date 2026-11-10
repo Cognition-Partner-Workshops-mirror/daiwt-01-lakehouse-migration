@@ -162,14 +162,29 @@ def test_visible_task_exits_nonzero_and_writes_failure_evidence(monkeypatch, tmp
     monkeypatch.setattr('databricks.sdk.WorkspaceClient', lambda: object())
     monkeypatch.setattr(sys, 'argv', ['full_job_check.py', '--suffix', 'pr_42', '--output', str(output)])
     monkeypatch.setattr(checker, 'run', lambda *a: (_ for _ in ()).throw(RuntimeError('control mismatch')))
-    assert checker.main() == 1
+    with pytest.raises(RuntimeError, match='control mismatch'):
+        checker.main()
     assert json.loads(output.read_text())['error'] == 'control mismatch'
+
+
+def test_visible_task_success_returns_without_system_exit(monkeypatch, tmp_path):
+    output = tmp_path / 'result.json'
+    monkeypatch.setattr('databricks.sdk.WorkspaceClient', lambda: object())
+    monkeypatch.setattr(sys, 'argv', ['full_job_check.py', '--suffix', 'pr_42', '--output', str(output)])
+    result = dict(status='PASS', counts=dict(PASS=31, FAIL=0, SKIP=0))
+    monkeypatch.setattr(checker, 'run', lambda *a: result)
+    assert checker.main() is None
+    assert json.loads(output.read_text()) == result
+    source = (ROOT / 'src/parity/full_job_check.py').read_text()
+    entry_point = source[source.rindex("if __name__ == '__main__':"):]
+    exec(compile(entry_point, 'full_job_check.py', 'exec'), {'__name__': '__main__', 'main': checker.main})
 
 
 def test_visible_verification_job_and_shell_entry_point():
     job = yaml.safe_load((ROOT / 'ci/full_job_verification.job.yml').read_text())['resources']['jobs']['full_job_verification']
     task = job['tasks'][0]
     assert task['task_key'] == 'verify_full_job'
+    assert task['max_retries'] == 0
     assert (ROOT / 'ci' / task['spark_python_task']['python_file']).resolve() == ROOT / 'src/parity/full_job_check.py'
     assert '--suffix' in task['spark_python_task']['parameters']
     assert 'python ci/full_job_verify.py "$@"' in (ROOT / 'ci/full_job_verify.sh').read_text()
