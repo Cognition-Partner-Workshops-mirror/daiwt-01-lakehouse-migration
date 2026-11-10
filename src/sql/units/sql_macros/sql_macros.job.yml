@@ -1,0 +1,36 @@
+resources:
+  jobs:
+    sql_macros:
+      name: ${var.job_name_prefix}sql_macros
+      parameters:
+        - name: drop
+          default: D0
+      tags:
+        environment: ${bundle.target}
+      tasks:
+        - task_key: create_functions
+          sql_task:
+            warehouse_id: ${var.warehouse_id}
+            file:
+              path: ./functions.sql
+              source: WORKSPACE
+            parameters:
+              catalog: ${var.catalog}
+              bronze_schema: ${var.bronze_schema}
+              silver_schema: ${var.silver_schema}
+              gold_schema: ${var.gold_schema}
+              drop: "{{job.parameters.drop}}"
+        - task_key: check_functions
+          depends_on:
+            - task_key: create_functions
+          sql_task:
+            warehouse_id: ${var.warehouse_id}
+            file:
+              path: ./self_check.sql
+              source: WORKSPACE
+            parameters:
+              catalog: ${var.catalog}
+              bronze_schema: ${var.bronze_schema}
+              silver_schema: ${var.silver_schema}
+              gold_schema: ${var.gold_schema}
+              drop: "{{job.parameters.drop}}"

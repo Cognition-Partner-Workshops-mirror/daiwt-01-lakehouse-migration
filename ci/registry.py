@@ -1,6 +1,7 @@
 """Validate unit ownership and order selected units by dependency."""
 import json
 import re
+import subprocess
 from pathlib import Path
 
 
@@ -15,7 +16,7 @@ def topo_order(registry, units):
         raise ValueError("unknown units: " + ", ".join(sorted(unknown)))
     ordered = []
     while selected:
-        ready = next((unit for unit in registry if unit in selected
+        ready = next((unit for unit in sorted(registry) if unit in selected
                       and not selected.intersection(registry[unit].get("depends_on", []))), None)
         if ready is None:
             raise ValueError("dependency cycle among: " + ", ".join(unit for unit in registry if unit in selected))
@@ -34,20 +35,28 @@ def with_dependencies(registry, units):
         selected |= upstream
 
 
-def validate(registry, contract_outputs=None):
+def validate(registry, contract):
     if not isinstance(registry, dict):
         raise ValueError("registry must be a JSON object")
     jobs, owners = set(), {}
-    contract_outputs = set(contract_outputs) if contract_outputs is not None else None
+    contract_outputs = {entry['table']: entry['unit'] for entry in contract['outputs']}
     for unit, spec in registry.items():
         if not isinstance(unit, str) or not re.fullmatch(r"[a-z][a-z0-9_]*", unit):
             raise ValueError(f"invalid unit name: {unit!r}")
-        if not isinstance(spec, dict) or set(spec) != {"job", "outputs", "owns", "depends_on"}:
-            raise ValueError(f"{unit}: required keys are exactly job, outputs, owns, depends_on")
+        if not isinstance(spec, dict) or set(spec) != {"job", "legacy_unit", "outputs", "owns", "depends_on"}:
+            raise ValueError(f"{unit}: required keys are exactly job, legacy_unit, outputs, owns, depends_on")
+        if not isinstance(spec['legacy_unit'], str) or spec['legacy_unit'] not in {'foundation', *contract_outputs.values()}:
+            raise ValueError(f"{unit}: legacy_unit not in contract")
         job = spec["job"]
         if not isinstance(job, str) or not job.strip():
             raise ValueError(f"{unit}: job must be a non-empty string")
-        if job in jobs:
+        if not re.fullmatch(r"[a-z][a-z0-9_]*", job):
+            raise ValueError(f"{unit}: invalid job identifier: {job}")
+        if job == 'silver_pipeline' and unit != 'silver_pipeline':
+            if (not unit.startswith('silver_') or not isinstance(spec['depends_on'], list)
+                    or 'silver_pipeline' not in spec['depends_on']):
+                raise ValueError(f'{unit}: shared silver_pipeline job requires a silver entity depending on silver_pipeline')
+        if job in jobs and job != 'silver_pipeline':
             raise ValueError(f"duplicate job: {job}")
         jobs.add(job)
         for field in ("outputs", "owns", "depends_on"):
@@ -63,6 +72,8 @@ def validate(registry, contract_outputs=None):
                     raise ValueError(f"{unit}: invalid table name: {table}")
                 if field == "outputs" and contract_outputs is not None and table not in contract_outputs:
                     raise ValueError(f"{unit}: output not in contract: {table}")
+                if field == 'outputs' and contract_outputs[table] != spec['legacy_unit']:
+                    raise ValueError(f"{unit}: output belongs to another legacy_unit: {table}")
                 if field == "owns" and contract_outputs is not None and table in contract_outputs:
                     raise ValueError(f"{unit}: contract output belongs in outputs, not owns: {table}")
                 if table in owners:
@@ -90,7 +101,24 @@ def validate(registry, contract_outputs=None):
         visit(unit)
 
 
-def load(path="src/sql/units/registry.json"):
-    registry = json.loads(Path(path).read_text())
-    validate(registry)
+def load(root="."):
+    root = Path(root)
+    registry = {directory.name: json.loads((directory / 'unit.json').read_text())
+                for directory in sorted((root / 'src/sql/units').glob('*')) if directory.is_dir()}
+    validate(registry, json.loads((root / 'src/parity/contract.json').read_text()))
+    return registry
+
+
+def git(*args):
+    return subprocess.check_output(['git', *args], text=True)
+
+
+def load_at(rev):
+    prefix = 'src/sql/units/'
+    paths = git('ls-tree', '-r', '--name-only', rev, '--', prefix).splitlines()
+    directories = sorted({path[len(prefix):].split('/')[0] for path in paths
+                          if '/' in path[len(prefix):]})
+    registry = {unit: json.loads(git('show', f'{rev}:{prefix}{unit}/unit.json'))
+                for unit in directories}
+    validate(registry, json.loads(git('show', f'{rev}:src/parity/contract.json')))
     return registry

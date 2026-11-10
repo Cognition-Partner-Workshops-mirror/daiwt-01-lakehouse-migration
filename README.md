@@ -2,7 +2,8 @@
 
 SQL-unit migration scaffold for the DAIWT-01 Databricks medallion target:
 `bronze`, `silver` and `gold` in `daiwt_01_mig_dev` and `daiwt_01_mig_prod`.
-There are 0 migrated units yet; `src/sql/units/registry.json` is `{}`.
+Foundation units are added in subsequent steps. Registry entries are discovered from
+`src/sql/units/<unit>/unit.json`; there is no shared registry file.
 
 ## Source estate
 
@@ -46,7 +47,7 @@ generator's delivery plus row-level outputs materialized by its Python reference
 | Path | Purpose |
 | --- | --- |
 | `databricks.yml` | Dev and production bundle targets |
-| `src/sql/units/` | Migrated SQL files and `registry.json`; currently zero units |
+| `src/sql/units/` | Unit SQL, job YAML and `unit.json`; currently zero units |
 | `src/parity/parity_check.py` | Golden CSV multiset comparison using SDK Files and SQL Statements APIs |
 | `ci/dev_verify.sh` | Builder deployment, selected units, per-drop parity and attestation |
 | `ci/attest.py` | Fail-closed Markdown attestation from parity JSON |
@@ -129,15 +130,16 @@ Registered outputs report PASS only for exact row-count and content matches.
    execution order, with registry order breaking ties. See [registry documentation](docs/registry.md).
 
 `classify_changes.sh` compares `BASE_SHA`/`HEAD_SHA` (default `origin/main`/`HEAD`).
-SQL changes select their unit; registry or shared framework changes select all units.
+Unit changes select that unit and transitive upstream dependencies only.
+Shared framework changes select all units.
 README, workflow and test-only edits do not select unit jobs. Classification is recorded
-as diagnostic evidence. Builder verification runs the selected units and checks parity for every manifest drop.
+as diagnostic evidence. Builder verification runs the selected units and checks parity for D0 only.
 
 ## CI
 
 | Workflow | Trigger and behavior |
 | --- | --- |
-| `pr.yml` | PRs to `main` or `pre-migration`; offline tests, strict dev validation (no deploy), fail-closed pushed-head attestation check and sticky comment |
+| `pr.yml` | PRs to `main` or `pre-migration`; offline tests, strict dev and prod validation (no deploy), fail-closed pushed-head attestation check and sticky comment |
 | `deploy-prod.yml` | Push to `main` or manual; strict prod validation, bundle deployment, all registered production units and prod parity |
 | `reset.yml` | Manual `target=dev|prod`; runs only if `confirm` exactly matches target |
 | `dev-sweep.yml` | Manual; removes dev PR deployments for closed PRs, or a specified suffix |
@@ -162,29 +164,35 @@ bash ci/dev_verify.sh pr_<n>
 ```
 
 The builder resolves the PR base with `gh pr view` (falling back to `origin/main`),
-diffs `origin/<base>...HEAD`, expands dependants and upstream dependencies,
+diffs `origin/<base>...HEAD`, expands only upstream dependencies,
 validates and deploys dev, cleans selected owned objects,
-then runs units and parity for every manifest drop. Unit jobs receive only the
+then runs units and parity for D0 only. Unit jobs receive only the
 `drop` parameter. It renders `attestation.md` and inserts evidence into
-`daiwt_01_mig_dev.default.pr_attestation`, creating the table if necessary.
-Rows include head SHA, suffix, status, units, selection, drops, Markdown,
+`daiwt_01_mig_dev.default.unit_attestation`, creating the table if necessary.
+Rows include fingerprint, head SHA, suffix, status, units, selection, drops, Markdown,
 run URLs, recorded identity and timestamp.
 
 Dev parity receives the executed unit list and skips registered units outside that
-list with `not run in this verification`. Production always compares every registered unit.
+list with `not selected`. Production always compares every registered output.
 
-PR CI never deploys or executes unit jobs. It requires the latest row for the
-exact head SHA and `pr_<n>` suffix to be PASS, every current manifest drop to
-be PASS (with exactly the same drop set), and recorded units to cover the
-classification of `base...head`. Missing or stale evidence fails closed.
+PR CI never deploys or executes unit jobs. It accepts D0 PASS evidence whose
+units cover the required upstream-expanded selection and whose content fingerprint
+matches the current head. Missing or stale evidence fails closed after polling.
 All workflow concurrency groups use `cancel-in-progress: false`.
 
 ## Local checks
+
+Keep the venv activated (on PATH) for bundle Python resources and `ci/dev_verify.sh`.
+Silver pipeline libraries are discovered from `silver_*/*.pipeline.sql`, excluding
+`silver_pipeline`. With zero entity files no pipeline resource is created; there
+is no placeholder library.
+
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements-dev.txt
+mise install # .java-version pins Temurin JDK 17 for local Spark
 python -m pytest -q
 databricks bundle validate --strict -t prod
 databricks bundle validate --strict -t dev --var schema_suffix=pr_1
@@ -195,3 +203,14 @@ python ci/attest.py
 Parity writes per-drop JSON under `out/`; attestation writes `attestation.md`.
 With zero goldens, PASS means only that the empty contract is consistent, not migration parity.
 Future unregistered outputs are SKIP (not yet migrated), not compared parity evidence.
+
+PR CI runs offline tests, strict dev **and prod** validation, and a read-only
+attestation check; it never deploys. The check polls for up to 30 minutes, but
+skips immediately when selected units have no golden outputs. Evidence is keyed
+by the selected units, upstream files and shared-framework content fingerprint,
+not by head SHA. See [verification policy](docs/registry.md).
+
+Builder and production verification also run the shared `verification` bundle job.
+Its visible `verify` Python task exits nonzero on parity failure; CLI parity still
+writes local evidence. This shared job is not a migrated unit. Unit job execution
+uses `databricks bundle summary` deployment state (never workspace name lookup).

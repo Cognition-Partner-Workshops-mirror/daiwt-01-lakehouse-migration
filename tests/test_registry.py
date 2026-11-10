@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 import pytest
@@ -7,15 +8,23 @@ from registry import load, tables, topo_order, validate
 from run_units import run_units
 
 ROOT = Path(__file__).resolve().parents[1]
-CONTRACT = ["gold.city"]
+CONTRACT = {'outputs': [{'table': 'gold.city', 'unit': 'foundation'}]}
 
 
 def spec(job="build", outputs=None, owns=None, depends_on=None):
-    return dict(job=job, outputs=outputs or [], owns=owns or [], depends_on=depends_on or [])
+    return dict(job=job, legacy_unit='foundation', outputs=outputs or [], owns=owns or [], depends_on=depends_on or [])
 
 
 def test_real_registry():
-    assert load(ROOT / "src/sql/units/registry.json") == {}
+    registry = load(ROOT)
+    validate(registry, json.loads((ROOT / 'src/parity/contract.json').read_text()))
+    import yaml
+    for unit, spec in registry.items():
+        jobs = {}
+        directory = spec['job'] if spec['job'] == 'silver_pipeline' else unit
+        for path in (ROOT / "src/sql/units" / directory).glob("*.job.yml"):
+            jobs.update(yaml.safe_load(path.read_text()).get("resources", {}).get("jobs", {}))
+        assert spec["job"] in jobs
 
 
 def test_valid():
@@ -26,11 +35,21 @@ def test_valid():
     validate({}, CONTRACT)
 
 
+def test_foundation_is_explicit_without_contract_output():
+    contract = {'outputs': [{'table': 'silver.dim_customer', 'unit': 'customer'}]}
+    validate({'shared': spec()}, contract)
+    with pytest.raises(ValueError, match='another legacy_unit'):
+        validate({'shared': spec(outputs=['silver.dim_customer'])}, contract)
+    with pytest.raises(ValueError, match='legacy_unit not in contract'):
+        validate({'bad': {**spec(), 'legacy_unit': 'unknown'}}, contract)
+
+
 @pytest.mark.parametrize("registry,match", [
     ([], "JSON object"),
     ({"Bad": spec()}, "unit name"),
     ({"a": spec(job="")}, "non-empty"),
     ({"a": spec(job=1)}, "non-empty"),
+    ({"a": spec(job="bad-key")}, "invalid job identifier"),
     ({"a": spec(), "b": spec()}, "duplicate job"),
     ({"a": spec(outputs=["gold.city"]), "b": spec("b", ["gold.city"])}, "owned by both"),
     ({"a": spec(owns=["silver.city"]), "b": spec("b", owns=["silver.city"])}, "owned by both"),
@@ -71,13 +90,13 @@ def test_cross_ownership():
 
 
 def test_load_invalid(tmp_path):
-    path = tmp_path / "registry.json"
-    path.write_text('[]')
-    with pytest.raises(ValueError, match="JSON object"):
-        load(path)
+    path = tmp_path / 'src/sql/units/broken'
+    path.mkdir(parents=True)
+    with pytest.raises(FileNotFoundError):
+        load(tmp_path)
 
 
-@pytest.mark.parametrize("field", ["job", "outputs", "owns", "depends_on"])
+@pytest.mark.parametrize("field", ["job", "legacy_unit", "outputs", "owns", "depends_on"])
 def test_missing_key(field):
     entry = spec()
     del entry[field]

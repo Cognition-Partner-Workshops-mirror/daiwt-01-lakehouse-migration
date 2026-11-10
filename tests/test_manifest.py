@@ -100,12 +100,13 @@ def test_conflicting_output_drop():
             {"path": "outputs/D0/mart.sales.csv", "drop": "next", "columns": ["id"]}]}, "D0")
 
 
-def test_empty_attestation_and_current_drop_set():
+def test_empty_attestation_requires_only_d0():
     row = {"head_sha": "head", "suffix": "pr_1", "status": "PASS", "units": "[]",
-           "drops": '{"D0": {"status": "PASS"}}', "attestation_md": "# PASS"}
-    assert evaluate([row], "head", "pr_1", [], ["D0"])[0]
-    assert not evaluate([row], "head", "pr_1", [], ["D0", "next"])[0]
-    assert not evaluate([row], "head", "pr_1", ["new_unit"], ["D0"])[0]
+           "drops": '{"D0": {"status": "PASS"}}', "attestation_md": "# PASS", 'fingerprint': 'fp'}
+    assert evaluate([row], 'head', [], lambda *_: 'fp')[0]
+    row['drops'] = '{"D0": {"status": "PASS"}, "next": {"status": "FAIL"}}'
+    assert evaluate([row], 'head', [], lambda *_: 'fp')[0]
+    assert not evaluate([row], 'head', ['new_unit'], lambda *_: 'fp')[0]
 
 
 def test_workflow_no_cancellation():

@@ -7,10 +7,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from parity.parity_check import Warehouse, identifier
 from attest import render
-from drops import load_drops
+from classify_changes import fingerprint
 
-TABLE = "daiwt_01_mig_dev.default.pr_attestation"
-COLUMNS = ("head_sha", "suffix", "status", "units", "selection", "drops", "attestation_md", "run_urls", "recorded_by", "recorded_at")
+TABLE = "daiwt_01_mig_dev.default.unit_attestation"
+COLUMNS = ("fingerprint", "head_sha", "suffix", "status", "units", "selection", "drops", "attestation_md", "run_urls", "recorded_by", "recorded_at")
 
 
 def table_name(value):
@@ -30,7 +30,7 @@ def main():
     parser.add_argument("--run-urls", default="out/run-urls.txt")
     args = parser.parse_args()
     drops = {}
-    for drop in load_drops():
+    for drop in ['D0']:
         try:
             result = json.loads(Path(f"out/parity-{drop}.json").read_text())
             valid = render(result)[1] and result["drop"] == drop
@@ -43,7 +43,8 @@ def main():
     table = table_name(args.table)
     warehouse.sql(f"CREATE TABLE IF NOT EXISTS {table} (" + ", ".join(
         f"{column} {'TIMESTAMP' if column == 'recorded_at' else 'STRING'}" for column in COLUMNS) + ") USING DELTA")
-    values = dict(head_sha=args.head_sha, suffix=args.suffix, status=status,
+    values = dict(fingerprint=fingerprint(args.head_sha, json.loads(Path(args.units).read_text())),
+                  head_sha=args.head_sha, suffix=args.suffix, status=status,
                   units=json.dumps(json.loads(Path(args.units).read_text())), selection=args.selection,
                   drops=json.dumps(drops), attestation_md=Path(args.attestation).read_text(),
                   run_urls=json.dumps(Path(args.run_urls).read_text().splitlines()),
