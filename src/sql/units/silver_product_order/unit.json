@@ -1,0 +1,1 @@
+{"job":"silver_pipeline","legacy_unit":"foundation","outputs":[],"owns":["silver.fct_product_order","silver.fct_product_order_quarantine"],"depends_on":["silver_pipeline"]}
