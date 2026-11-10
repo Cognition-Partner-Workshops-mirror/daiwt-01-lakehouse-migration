@@ -1,0 +1,5 @@
+product_id|product_name|annual_rate|batch_id|load_ts|src_system_cd|record_status_cd|effective_date|expiry_date|product_family_cd|currency_cd|product_status_cd|rate_basis_cd|minimum_balance
+1|Brukskonto|1.50|20250630|2025-06-30 23:00:00|COREBANK|A|2024-01-01|9999-12-31|RETAIL|NOK|LIVE|ACT365|0
+2|Sparekonto|3.50|20250630|2025-06-30 23:00:00|COREBANK|A|2024-01-01|9999-12-31|RETAIL|NOK|LIVE|ACT365|0
+3|Boliglan|5.25|20250630|2025-06-30 23:00:00|COREBANK|A|2024-01-01|9999-12-31|RETAIL|NOK|LIVE|ACT365|0
+4|Kredittkort|19.90|20250630|2025-06-30 23:00:00|COREBANK|A|2024-01-01|9999-12-31|RETAIL|NOK|LIVE|ACT365|0

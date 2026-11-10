@@ -1,0 +1,1 @@
+{"job":"silver_pipeline","legacy_unit":"foundation","outputs":[],"owns":["silver.dim_product","silver.dim_product_quarantine"],"depends_on":["silver_pipeline"]}
