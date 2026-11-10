@@ -1,0 +1,51 @@
+resources:
+  jobs:
+    gold_card_category:
+      name: ${var.job_name_prefix}gold_card_category
+      max_concurrent_runs: 1
+      parameters:
+        - name: drop
+          default: D0
+        - name: window_start
+          default: '2024-01-01'
+        - name: as_of_date
+          default: '2025-06-30'
+        - name: batch_id
+          default: '20250630'
+      tags:
+        environment: ${bundle.target}
+      tasks:
+        - task_key: mart_card_spend_category
+          max_retries: 0
+          sql_task:
+            warehouse_id: ${var.warehouse_id}
+            file:
+              path: ./card_category.sql
+              source: WORKSPACE
+            parameters:
+              catalog: ${var.catalog}
+              bronze_schema: ${var.bronze_schema}
+              silver_schema: ${var.silver_schema}
+              gold_schema: ${var.gold_schema}
+              drop: '{{job.parameters.drop}}'
+              window_start: '{{job.parameters.window_start}}'
+              as_of_date: '{{job.parameters.as_of_date}}'
+              batch_id: '{{job.parameters.batch_id}}'
+        - task_key: verify_mart_card_spend_category
+          max_retries: 0
+          depends_on:
+            - task_key: mart_card_spend_category
+          sql_task:
+            warehouse_id: ${var.warehouse_id}
+            file:
+              path: ./self_check.sql
+              source: WORKSPACE
+            parameters:
+              catalog: ${var.catalog}
+              bronze_schema: ${var.bronze_schema}
+              silver_schema: ${var.silver_schema}
+              gold_schema: ${var.gold_schema}
+              drop: '{{job.parameters.drop}}'
+              window_start: '{{job.parameters.window_start}}'
+              as_of_date: '{{job.parameters.as_of_date}}'
+              batch_id: '{{job.parameters.batch_id}}'
