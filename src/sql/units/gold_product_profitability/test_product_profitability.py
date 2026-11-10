@@ -22,8 +22,8 @@ def test_unit_registry_entry():
 def test_output_columns_match_contract_in_ddl_order():
     contract = json.loads((ROOT / 'src/parity/contract.json').read_text())
     entry = next(o for o in contract['outputs'] if o['table'] == 'gold.mart_product_profitability')
-    ddl = re.search(r'mart_product_profitability\'\) \((.*?)\n\)', SQL, re.S).group(1)
-    columns = [line.split()[0] for line in ddl.strip().splitlines()]
+    select = SQL[SQL.index('CREATE OR REPLACE TABLE'):].split('AS SELECT', 1)[1].split('FROM vt_product_income')[0]
+    columns = re.findall(r' AS (\w+),?\n', select)
     assert [c for c in columns if c != 'load_ts'] == [c['name'] for c in entry['columns']]
     assert columns.index('load_ts') == columns.index('batch_id') + 1
 

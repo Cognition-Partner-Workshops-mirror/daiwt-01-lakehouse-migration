@@ -14,20 +14,10 @@ SELECT CASE WHEN count(*) = 0 THEN 'PASS product income controls'
 FROM vt_product_income
 WHERE annual_rate IS NULL OR annual_rate < 0 OR precise_balance IS NULL;
 
-CREATE OR REPLACE TABLE IDENTIFIER(:catalog || '.' || :gold_schema || '.mart_product_profitability') (
-  product_id INT,
-  average_balance DECIMAL(18,2),
-  annual_income DECIMAL(18,2),
-  batch_id BIGINT NOT NULL,
-  load_ts TIMESTAMP_NTZ NOT NULL,
-  src_system_cd STRING,
-  record_status_cd STRING,
-  effective_date DATE,
-  expiry_date DATE
-)
+CREATE OR REPLACE TABLE IDENTIFIER(:catalog || '.' || :gold_schema || '.mart_product_profitability')
 TBLPROPERTIES ('delta.feature.timestampNtz' = 'supported')
 AS SELECT
-  product_id,
+  CAST(product_id AS INT) AS product_id,
   CAST(precise_balance AS DECIMAL(18,2)) AS average_balance,
   CAST(precise_balance * annual_rate / 100 AS DECIMAL(18,2)) AS annual_income,
   CAST(date_format(CAST(:as_of_date AS DATE), 'yyyyMMdd') AS BIGINT) AS batch_id,
