@@ -24,10 +24,10 @@ SELECT CAST(NULL AS INT), CAST(1 AS INT), CAST(1 AS INT), DATE '2025-06-30',
 WHERE '${silver_bad_rows}' = 'true';
 
 CREATE OR REFRESH MATERIALIZED VIEW fct_product_order (
-  CONSTRAINT valid_order_id EXPECT (order_id IS NOT NULL),
-  CONSTRAINT valid_record_status EXPECT (record_status_cd IN ('A','D')),
-  CONSTRAINT required_batch EXPECT (batch_id IS NOT NULL),
-  CONSTRAINT required_load_ts EXPECT (load_ts IS NOT NULL)
+  CONSTRAINT valid_order_id EXPECT (order_id IS NOT NULL) ON VIOLATION DROP ROW,
+  CONSTRAINT valid_record_status EXPECT (record_status_cd IN ('A','D')) ON VIOLATION DROP ROW,
+  CONSTRAINT required_batch EXPECT (batch_id IS NOT NULL) ON VIOLATION DROP ROW,
+  CONSTRAINT required_load_ts EXPECT (load_ts IS NOT NULL) ON VIOLATION DROP ROW
 )
 TBLPROPERTIES ('delta.feature.timestampNtz'='supported')
 AS SELECT order_id, customer_id, product_id, order_date, status, batch_id, load_ts,

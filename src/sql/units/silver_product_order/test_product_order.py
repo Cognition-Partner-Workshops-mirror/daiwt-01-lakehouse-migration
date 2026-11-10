@@ -85,7 +85,7 @@ def test_sql_structure_and_registry():
     assert '${catalog}.${silver_schema}.asof_edw_fct_product_order(:drop)' in SQL
     assert SQL.count("TBLPROPERTIES ('delta.feature.timestampNtz'='supported')") == 3
     assert "WHERE '${silver_bad_rows}' = 'true'" in SQL
-    assert 'ON VIOLATION' not in SQL
+    assert SQL.count('ON VIOLATION DROP ROW') == 4
     assert 'DISTINCT' not in SQL and 'coalesce' not in SQL.split('UNION ALL')[0]
     spec = json.loads((UNIT / 'unit.json').read_text())
     assert spec == dict(job='silver_pipeline', legacy_unit='foundation', outputs=[],
@@ -116,7 +116,7 @@ def test_normal_and_empty_quarantine():
 def test_failed_expectations_are_quarantined(field, value):
     row = {**fixture_rows()[0], field: value}
     assert len(quarantine([row])) == 1
-    expressions = re.findall(r'CONSTRAINT \w+ EXPECT \((.*?)\)(?:,|\n)', SQL)
+    expressions = re.findall(r'CONSTRAINT \w+ EXPECT \((.*?)\) ON VIOLATION DROP ROW(?:,|\n)', SQL)
     assert len(expressions) == 4
     assert f'{field} ' in ' '.join(expressions)
 

@@ -2,7 +2,7 @@
 
 `fct_product_order` is a typed, full-copy Silver MV over
 `asof_edw_fct_product_order(:drop)`, including inactive records. Expectations
-monitor keys, record status and mandatory lineage without dropping source rows;
+drop rows failing key, record-status and lineage checks from the output;
 `fct_product_order_quarantine` also retains any rows failing those expectations,
 including NULL status. The output contains only the 15 legacy DDL columns.
 `${silver_bad_rows}` adds one synthetic invalid row only when enabled in dev.
