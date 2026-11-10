@@ -8,3 +8,6 @@ attestation.md
 .env
 golden/inputs/
 golden/outputs/
+golden/controls/
+golden/legacy/
+golden/run/

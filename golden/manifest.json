@@ -1,6 +1,1338 @@
 {
+  "capture_id": "20261110T162154Z",
+  "captured_at_utc": "2026-11-10T16:21:54Z",
+  "capture_mode": "snapshot",
+  "source": {
+    "engine": "Teradata 17.x (mocked; no live Teradata instance exists)",
+    "statement": "Outputs come from the legacy repository's Python reference controls (golden/compute_baselines.py transform()), which the legacy README states implement the same joins, windows and calculations as the nightly BTEQ. They are not the result of a Teradata execution.",
+    "legacy_repo": "https://github.com/Cognition-Partner-Workshops-mirror/daiwt-01-teradata-warehouse",
+    "legacy_commit": "cf4b4fabd3df9c49f724b3087e590b68d28d8ef1",
+    "legacy_run": {
+      "setup": "make setup",
+      "reset": "make reset S3= (local only)",
+      "deterministic_delivery": true,
+      "committed_controls_reproduced": true,
+      "delivery_files": 23
+    },
+    "generator": "data/generate.py",
+    "generator_seed": 1704,
+    "source_sha256": {
+      "data/generate.py": "30d0503081503efad079aa7d49980fcc14f48eca447cdee8f8ee9f21774fbda4",
+      "data/column_defaults.json": "ed3e4c8c929d5fa64025b042ca0f925ad9e3ae43354bf12fa59ccce5edd3e308",
+      "golden/compute_baselines.py": "edf14b69720154d931b1c2267f341819a3318fa435ce4ad0acda4fe60c98a901",
+      "requirements.txt": "bf3bc382ec868751484a255e193b578e705d350b8db594d916f69e78793896f9",
+      "Makefile": "3e4d4cf6de184a5181bc4ec28da9a735fa9b4f3e540dd5409fe5ea84aba4eb8e"
+    },
+    "s3_landing": "s3://daiwt-01-landing-599083837640/daiwt-01/landing/",
+    "s3_landing_manifest_md5": "48c947cd4d92fd099f034157be10a22b",
+    "s3_landing_manifest_sha256": "c63a42587c196f7df5f81dfc907d91aa174854cf56eca60f64d1bda0ce7681db",
+    "s3_cross_check": "every delivered CSV md5 and row count equals the S3 _manifest.json"
+  },
   "drops": [
-    "D0"
+    {
+      "name": "D0",
+      "batch_id": 20250630,
+      "business_date": "2025-06-30"
+    }
   ],
-  "files": []
+  "drops_reason": "single retained delivery (batch 20250630, business date 2025-06-30); full replacement load",
+  "csv_conventions": {
+    "inputs": {
+      "files": "copied byte-for-byte as delivered",
+      "delimiter": "|",
+      "header": true,
+      "encoding": "UTF-8",
+      "line_endings": "LF",
+      "parquet": "snappy, alternate encoding of the same delivery"
+    },
+    "outputs": {
+      "delimiter": ",",
+      "quoting": "RFC4180 minimal",
+      "header": "ordered manifest columns",
+      "encoding": "UTF-8",
+      "line_endings": "LF",
+      "null": "\\N",
+      "integer": "decimal digits",
+      "decimal": "fixed DDL scale, ROUND_HALF_UP; capture fails if a float would round by more than 1e-6",
+      "date": "YYYY-MM-DD",
+      "timestamp": "TIMESTAMP(0) as Statements API TIMESTAMP in UTC: YYYY-MM-DDTHH:MM:SS.000Z",
+      "char": "value as delivered (no Teradata CHAR padding)",
+      "ordering": "sorted by keys; keys verified unique",
+      "column_order": "legacy DDL order minus excluded columns"
+    }
+  },
+  "excluded_from_parity": [
+    {
+      "column": "load_ts",
+      "constant_value": "2025-06-30 23:00:00",
+      "tables": [
+        "nvb_edw.dim_customer",
+        "nvb_edw.fct_transaction",
+        "nvb_edw.dim_account",
+        "nvb_mart.mart_monthly_balance",
+        "nvb_mart.mart_customer_segment",
+        "nvb_mart.mart_branch_performance",
+        "nvb_mart.mart_product_profitability",
+        "nvb_mart.mart_channel_daily",
+        "nvb_mart.mart_card_spend_category",
+        "nvb_edw.etl_batch_control"
+      ],
+      "reason": "logical delivery timestamp, constant across every row; not a computed value"
+    }
+  ],
+  "controls": "controls/D0/expected/*.json and controls/D0/summary.csv are the legacy reference baselines, unchanged; each output's metrics were recomputed and equal its control",
+  "skipped_branches": "skipped_branches.json",
+  "files": [
+    {
+      "path": "inputs/D0/nvb_edw.dim_account/nvb_edw.dim_account.csv",
+      "sha256": "b473309f07e2e9e4d9ca6ce0b50ff8c1e32f2724e14c5ff33227e38e70373068",
+      "bytes": 837295,
+      "table": "nvb_edw.dim_account",
+      "format": "csv",
+      "row_count": 8000,
+      "columns": [
+        "account_id",
+        "customer_id",
+        "product_id",
+        "opened_date",
+        "dormant_flag",
+        "batch_id",
+        "load_ts",
+        "src_system_cd",
+        "record_status_cd",
+        "effective_date",
+        "expiry_date",
+        "currency_cd",
+        "account_status_cd",
+        "accrual_basis_cd",
+        "overdraft_limit"
+      ],
+      "md5": "9d50be83688a82a14d5e88d8c6fab6f1",
+      "md5_matches_s3_manifest": true
+    },
+    {
+      "path": "inputs/D0/nvb_edw.dim_account/nvb_edw.dim_account.parquet",
+      "sha256": "21b563bec8c6d83a8f7a1657e1f84795960f54bcad5a1175b8b79d28766b2930",
+      "bytes": 89201,
+      "table": "nvb_edw.dim_account",
+      "format": "parquet",
+      "row_count": 8000,
+      "columns": [
+        "account_id",
+        "customer_id",
+        "product_id",
+        "opened_date",
+        "dormant_flag",
+        "batch_id",
+        "load_ts",
+        "src_system_cd",
+        "record_status_cd",
+        "effective_date",
+        "expiry_date",
+        "currency_cd",
+        "account_status_cd",
+        "accrual_basis_cd",
+        "overdraft_limit"
+      ]
+    },
+    {
+      "path": "inputs/D0/nvb_edw.dim_branch/nvb_edw.dim_branch.csv",
+      "sha256": "cc6c4442e669e8ce816809fd28fb8d474cd667deaaea0912e16e016adc5d2892",
+      "bytes": 1037,
+      "table": "nvb_edw.dim_branch",
+      "format": "csv",
+      "row_count": 8,
+      "columns": [
+        "branch_id",
+        "town",
+        "batch_id",
+        "load_ts",
+        "src_system_cd",
+        "record_status_cd",
+        "effective_date",
+        "expiry_date",
+        "branch_name",
+        "region_cd",
+        "branch_type_cd",
+        "service_language_cd",
+        "branch_status_cd"
+      ],
+      "md5": "64b619c60c8c72dfb5f22fccca14990c",
+      "md5_matches_s3_manifest": true
+    },
+    {
+      "path": "inputs/D0/nvb_edw.dim_branch/nvb_edw.dim_branch.parquet",
+      "sha256": "ab5b0f851f77dcb48fb91f743fc9d7ed570bab842f36fafda6e29f7bf10c6fdb",
+      "bytes": 7862,
+      "table": "nvb_edw.dim_branch",
+      "format": "parquet",
+      "row_count": 8,
+      "columns": [
+        "branch_id",
+        "town",
+        "batch_id",
+        "load_ts",
+        "src_system_cd",
+        "record_status_cd",
+        "effective_date",
+        "expiry_date",
+        "branch_name",
+        "region_cd",
+        "branch_type_cd",
+        "service_language_cd",
+        "branch_status_cd"
+      ]
+    },
+    {
+      "path": "inputs/D0/nvb_edw.dim_calendar/nvb_edw.dim_calendar.csv",
+      "sha256": "d61361d506744cd350882158326a27c4e1a5bf235c110262a1f4017824ee5132",
+      "bytes": 64244,
+      "table": "nvb_edw.dim_calendar",
+      "format": "csv",
+      "row_count": 547,
+      "columns": [
+        "calendar_date",
+        "month_start",
+        "year_no",
+        "month_no",
+        "batch_id",
+        "load_ts",
+        "src_system_cd",
+        "record_status_cd",
+        "effective_date",
+        "expiry_date",
+        "calendar_name",
+        "business_day_rule_cd"
+      ],
+      "md5": "324831cace24fa004ccc83e605c1e372",
+      "md5_matches_s3_manifest": true
+    },
+    {
+      "path": "inputs/D0/nvb_edw.dim_calendar/nvb_edw.dim_calendar.parquet",
+      "sha256": "7d0b822019bf23613312a6a020c92fa557d283d0d3524c54435b9e2fb3516012",
+      "bytes": 10711,
+      "table": "nvb_edw.dim_calendar",
+      "format": "parquet",
+      "row_count": 547,
+      "columns": [
+        "calendar_date",
+        "month_start",
+        "year_no",
+        "month_no",
+        "batch_id",
+        "load_ts",
+        "src_system_cd",
+        "record_status_cd",
+        "effective_date",
+        "expiry_date",
+        "calendar_name",
+        "business_day_rule_cd"
+      ]
+    },
+    {
+      "path": "inputs/D0/nvb_edw.dim_card/nvb_edw.dim_card.csv",
+      "sha256": "e616e9620757f2f8086f1a4e8122efe9f655423edb30a416d13ff110f04889b7",
+      "bytes": 661011,
+      "table": "nvb_edw.dim_card",
+      "format": "csv",
+      "row_count": 6000,
+      "columns": [
+        "card_id",
+        "account_id",
+        "card_type",
+        "batch_id",
+        "load_ts",
+        "src_system_cd",
+        "record_status_cd",
+        "effective_date",
+        "expiry_date",
+        "network_cd",
+        "card_status_cd",
+        "card_expiry_date",
+        "contactless_ind",
+        "online_enabled_ind"
+      ],
+      "md5": "fe21ea69c49dfd41b6587bfd3a4e6b2a",
+      "md5_matches_s3_manifest": true
+    },
+    {
+      "path": "inputs/D0/nvb_edw.dim_card/nvb_edw.dim_card.parquet",
+      "sha256": "442faa496d0276bb2e4753efd815e9b758860722703cd9206c5f7276bfd138a0",
+      "bytes": 76800,
+      "table": "nvb_edw.dim_card",
+      "format": "parquet",
+      "row_count": 6000,
+      "columns": [
+        "card_id",
+        "account_id",
+        "card_type",
+        "batch_id",
+        "load_ts",
+        "src_system_cd",
+        "record_status_cd",
+        "effective_date",
+        "expiry_date",
+        "network_cd",
+        "card_status_cd",
+        "card_expiry_date",
+        "contactless_ind",
+        "online_enabled_ind"
+      ]
+    },
+    {
+      "path": "inputs/D0/nvb_edw.dim_merchant/nvb_edw.dim_merchant.csv",
+      "sha256": "990bf3412dc2584137a4640bacbf33c4a874d7dfa5c7fbbefb2220d3bf5f69bd",
+      "bytes": 8546,
+      "table": "nvb_edw.dim_merchant",
+      "format": "csv",
+      "row_count": 80,
+      "columns": [
+        "merchant_id",
+        "merchant_name",
+        "category",
+        "batch_id",
+        "load_ts",
+        "src_system_cd",
+        "record_status_cd",
+        "effective_date",
+        "expiry_date",
+        "country_cd",
+        "settlement_currency_cd",
+        "acquirer_cd",
+        "merchant_status_cd"
+      ],
+      "md5": "53859d8f61c85804d8b6ef39d09a9f88",
+      "md5_matches_s3_manifest": true
+    },
+    {
+      "path": "inputs/D0/nvb_edw.dim_merchant/nvb_edw.dim_merchant.parquet",
+      "sha256": "c398d53972e94e0245e0e58542bac535b8e83a50a389f4bb515b359e41912fcc",
+      "bytes": 8779,
+      "table": "nvb_edw.dim_merchant",
+      "format": "parquet",
+      "row_count": 80,
+      "columns": [
+        "merchant_id",
+        "merchant_name",
+        "category",
+        "batch_id",
+        "load_ts",
+        "src_system_cd",
+        "record_status_cd",
+        "effective_date",
+        "expiry_date",
+        "country_cd",
+        "settlement_currency_cd",
+        "acquirer_cd",
+        "merchant_status_cd"
+      ]
+    },
+    {
+      "path": "inputs/D0/nvb_edw.dim_product/nvb_edw.dim_product.csv",
+      "sha256": "f969b572c8240a2d1d24f9b42ce602cecdde38e97930298d3e0c27c143e301be",
+      "bytes": 609,
+      "table": "nvb_edw.dim_product",
+      "format": "csv",
+      "row_count": 4,
+      "columns": [
+        "product_id",
+        "product_name",
+        "annual_rate",
+        "batch_id",
+        "load_ts",
+        "src_system_cd",
+        "record_status_cd",
+        "effective_date",
+        "expiry_date",
+        "product_family_cd",
+        "currency_cd",
+        "product_status_cd",
+        "rate_basis_cd",
+        "minimum_balance"
+      ],
+      "md5": "ca74231f353fd2d9a433ec3cb11e8027",
+      "md5_matches_s3_manifest": true
+    },
+    {
+      "path": "inputs/D0/nvb_edw.dim_product/nvb_edw.dim_product.parquet",
+      "sha256": "9917532214da409015d22fc4d6582ac59e88328ecf2bb697125d42704e6b10f1",
+      "bytes": 8550,
+      "table": "nvb_edw.dim_product",
+      "format": "parquet",
+      "row_count": 4,
+      "columns": [
+        "product_id",
+        "product_name",
+        "annual_rate",
+        "batch_id",
+        "load_ts",
+        "src_system_cd",
+        "record_status_cd",
+        "effective_date",
+        "expiry_date",
+        "product_family_cd",
+        "currency_cd",
+        "product_status_cd",
+        "rate_basis_cd",
+        "minimum_balance"
+      ]
+    },
+    {
+      "path": "inputs/D0/nvb_edw.fct_daily_balance/nvb_edw.fct_daily_balance.csv",
+      "sha256": "04236fecd51ae9fa4211aa4edc5c4ac0c0adb955e30d51ae8d44d51fb7bd6954",
+      "bytes": 440734330,
+      "table": "nvb_edw.fct_daily_balance",
+      "format": "csv",
+      "row_count": 4376000,
+      "columns": [
+        "account_id",
+        "balance_date",
+        "balance",
+        "batch_id",
+        "load_ts",
+        "src_system_cd",
+        "record_status_cd",
+        "effective_date",
+        "expiry_date",
+        "balance_type_cd",
+        "currency_cd",
+        "accrued_interest",
+        "reserved_amount"
+      ],
+      "md5": "6ffde02b47c5985ab6f94449e4dfc603",
+      "md5_matches_s3_manifest": true
+    },
+    {
+      "path": "inputs/D0/nvb_edw.fct_daily_balance/nvb_edw.fct_daily_balance.parquet",
+      "sha256": "c1bc8c53fd18586ae65b62fe6c0c19bd4d33fde7e136edb051fa6959d0fbedb9",
+      "bytes": 29317311,
+      "table": "nvb_edw.fct_daily_balance",
+      "format": "parquet",
+      "row_count": 4376000,
+      "columns": [
+        "account_id",
+        "balance_date",
+        "balance",
+        "batch_id",
+        "load_ts",
+        "src_system_cd",
+        "record_status_cd",
+        "effective_date",
+        "expiry_date",
+        "balance_type_cd",
+        "currency_cd",
+        "accrued_interest",
+        "reserved_amount"
+      ]
+    },
+    {
+      "path": "inputs/D0/nvb_edw.fct_loan/nvb_edw.fct_loan.csv",
+      "sha256": "7ae9002e6cc6d4cba3f515b3365ae132977458bbe17488f498c795421da1024c",
+      "bytes": 207334,
+      "table": "nvb_edw.fct_loan",
+      "format": "csv",
+      "row_count": 1800,
+      "columns": [
+        "loan_id",
+        "account_id",
+        "outstanding",
+        "arrears_days",
+        "batch_id",
+        "load_ts",
+        "src_system_cd",
+        "record_status_cd",
+        "effective_date",
+        "expiry_date",
+        "loan_status_cd",
+        "currency_cd",
+        "contractual_rate",
+        "repayment_frequency_cd",
+        "collateral_type_cd"
+      ],
+      "md5": "6280e0edead658df7a11f944124df9d6",
+      "md5_matches_s3_manifest": true
+    },
+    {
+      "path": "inputs/D0/nvb_edw.fct_loan/nvb_edw.fct_loan.parquet",
+      "sha256": "ac8c2a1c5c889ab755bfe3130b1be20bfbe7eb5b5f8c39cf9be18e20311147f7",
+      "bytes": 43618,
+      "table": "nvb_edw.fct_loan",
+      "format": "parquet",
+      "row_count": 1800,
+      "columns": [
+        "loan_id",
+        "account_id",
+        "outstanding",
+        "arrears_days",
+        "batch_id",
+        "load_ts",
+        "src_system_cd",
+        "record_status_cd",
+        "effective_date",
+        "expiry_date",
+        "loan_status_cd",
+        "currency_cd",
+        "contractual_rate",
+        "repayment_frequency_cd",
+        "collateral_type_cd"
+      ]
+    },
+    {
+      "path": "inputs/D0/nvb_edw.fct_product_order/nvb_edw.fct_product_order.csv",
+      "sha256": "6bb904dbdd84251c60f29efc7f9ed59cc19ae9d8c6452edc00852e33592e4abc",
+      "bytes": 417099,
+      "table": "nvb_edw.fct_product_order",
+      "format": "csv",
+      "row_count": 3500,
+      "columns": [
+        "order_id",
+        "customer_id",
+        "product_id",
+        "order_date",
+        "status",
+        "batch_id",
+        "load_ts",
+        "src_system_cd",
+        "record_status_cd",
+        "effective_date",
+        "expiry_date",
+        "application_channel_cd",
+        "decision_system_cd",
+        "currency_cd",
+        "manual_review_ind"
+      ],
+      "md5": "cf332ceff0290795fa3cdf0f5997b747",
+      "md5_matches_s3_manifest": true
+    },
+    {
+      "path": "inputs/D0/nvb_edw.fct_product_order/nvb_edw.fct_product_order.parquet",
+      "sha256": "c6d06f489c435d50c37e59d560dd1fcb44ac22a6fe1748e0ba58125ceaa4daf5",
+      "bytes": 52297,
+      "table": "nvb_edw.fct_product_order",
+      "format": "parquet",
+      "row_count": 3500,
+      "columns": [
+        "order_id",
+        "customer_id",
+        "product_id",
+        "order_date",
+        "status",
+        "batch_id",
+        "load_ts",
+        "src_system_cd",
+        "record_status_cd",
+        "effective_date",
+        "expiry_date",
+        "application_channel_cd",
+        "decision_system_cd",
+        "currency_cd",
+        "manual_review_ind"
+      ]
+    },
+    {
+      "path": "inputs/D0/nvb_stg.customer_feed/nvb_stg.customer_feed.csv",
+      "sha256": "859f7feba65196b979ec106225f72bc0a48dc8528c1e047b132108a1c5381b4f",
+      "bytes": 252993,
+      "table": "nvb_stg.customer_feed",
+      "format": "csv",
+      "row_count": 5100,
+      "columns": [
+        "customer_id",
+        "customer_name",
+        "branch_id",
+        "town",
+        "updated_at"
+      ],
+      "md5": "1506cc6e52aaf5e919f3b060e61f6c97",
+      "md5_matches_s3_manifest": true
+    },
+    {
+      "path": "inputs/D0/nvb_stg.customer_feed/nvb_stg.customer_feed.parquet",
+      "sha256": "bb98077aedd09ea1469c6cd0d166bc174322823ce568c79f8471b429f7f50d1a",
+      "bytes": 76156,
+      "table": "nvb_stg.customer_feed",
+      "format": "parquet",
+      "row_count": 5100,
+      "columns": [
+        "customer_id",
+        "customer_name",
+        "branch_id",
+        "town",
+        "updated_at"
+      ]
+    },
+    {
+      "path": "inputs/D0/nvb_stg.transaction_feed/nvb_stg.transaction_feed.csv",
+      "sha256": "03afe64b65124ddb7676806e3a6f15c9ff55cd2919376502ccdc59bdf82b7519",
+      "bytes": 7141786,
+      "table": "nvb_stg.transaction_feed",
+      "format": "csv",
+      "row_count": 180000,
+      "columns": [
+        "transaction_id",
+        "account_id",
+        "txn_date",
+        "amount",
+        "channel",
+        "merchant_id"
+      ],
+      "md5": "56ee4920b1898a74caef1f3becaa4971",
+      "md5_matches_s3_manifest": true
+    },
+    {
+      "path": "inputs/D0/nvb_stg.transaction_feed/nvb_stg.transaction_feed.parquet",
+      "sha256": "96bc6ce28f1460b3c0bb2ca7a7ee4375a3c67bc25354625d461cc3e99e2720d7",
+      "bytes": 3120797,
+      "table": "nvb_stg.transaction_feed",
+      "format": "parquet",
+      "row_count": 180000,
+      "columns": [
+        "transaction_id",
+        "account_id",
+        "txn_date",
+        "amount",
+        "channel",
+        "merchant_id"
+      ]
+    },
+    {
+      "path": "inputs/D0/_manifest.json",
+      "sha256": "c63a42587c196f7df5f81dfc907d91aa174854cf56eca60f64d1bda0ce7681db",
+      "bytes": 1212,
+      "format": "json"
+    },
+    {
+      "path": "outputs/D0/customer/dim_customer.csv",
+      "sha256": "7d310e75fe7dff0e627f1b7442faf043ad7403d29f013893acb8627abfbd8c65",
+      "bytes": 613467,
+      "drop": "D0",
+      "unit": "customer",
+      "table": "silver.dim_customer",
+      "source_table": "nvb_edw.dim_customer",
+      "legacy_job": "01_customer",
+      "row_count": 5000,
+      "keys": [
+        "customer_id"
+      ],
+      "columns": [
+        {
+          "name": "customer_id",
+          "source_type": "INTEGER"
+        },
+        {
+          "name": "customer_name",
+          "source_type": "VARCHAR(80)"
+        },
+        {
+          "name": "branch_id",
+          "source_type": "INTEGER"
+        },
+        {
+          "name": "town",
+          "source_type": "VARCHAR(30)"
+        },
+        {
+          "name": "updated_at",
+          "source_type": "TIMESTAMP(0)"
+        },
+        {
+          "name": "batch_id",
+          "source_type": "BIGINT"
+        },
+        {
+          "name": "src_system_cd",
+          "source_type": "VARCHAR(12)"
+        },
+        {
+          "name": "record_status_cd",
+          "source_type": "CHAR(1)"
+        },
+        {
+          "name": "effective_date",
+          "source_type": "DATE"
+        },
+        {
+          "name": "expiry_date",
+          "source_type": "DATE"
+        },
+        {
+          "name": "customer_type_cd",
+          "source_type": "VARCHAR(12)"
+        },
+        {
+          "name": "residence_country_cd",
+          "source_type": "CHAR(2)"
+        },
+        {
+          "name": "preferred_language_cd",
+          "source_type": "CHAR(2)"
+        },
+        {
+          "name": "kyc_status_cd",
+          "source_type": "VARCHAR(12)"
+        },
+        {
+          "name": "consent_marketing_ind",
+          "source_type": "CHAR(1)"
+        }
+      ]
+    },
+    {
+      "path": "outputs/D0/transactions/fct_transaction.csv",
+      "sha256": "5d63ff72c48d0f82bac551fa492ed0b20c61b08cc19c585ba84ced927b972879",
+      "bytes": 18661915,
+      "drop": "D0",
+      "unit": "transactions",
+      "table": "silver.fct_transaction",
+      "source_table": "nvb_edw.fct_transaction",
+      "legacy_job": "02_transactions",
+      "row_count": 180000,
+      "keys": [
+        "transaction_id"
+      ],
+      "columns": [
+        {
+          "name": "transaction_id",
+          "source_type": "BIGINT"
+        },
+        {
+          "name": "account_id",
+          "source_type": "INTEGER"
+        },
+        {
+          "name": "txn_date",
+          "source_type": "DATE"
+        },
+        {
+          "name": "amount",
+          "source_type": "DECIMAL(18,2)"
+        },
+        {
+          "name": "channel",
+          "source_type": "VARCHAR(10)"
+        },
+        {
+          "name": "merchant_id",
+          "source_type": "INTEGER"
+        },
+        {
+          "name": "batch_id",
+          "source_type": "BIGINT"
+        },
+        {
+          "name": "src_system_cd",
+          "source_type": "VARCHAR(12)"
+        },
+        {
+          "name": "record_status_cd",
+          "source_type": "CHAR(1)"
+        },
+        {
+          "name": "effective_date",
+          "source_type": "DATE"
+        },
+        {
+          "name": "expiry_date",
+          "source_type": "DATE"
+        },
+        {
+          "name": "currency_cd",
+          "source_type": "CHAR(3)"
+        },
+        {
+          "name": "posting_status_cd",
+          "source_type": "VARCHAR(10)"
+        },
+        {
+          "name": "reversal_ind",
+          "source_type": "CHAR(1)"
+        },
+        {
+          "name": "clearing_scheme_cd",
+          "source_type": "VARCHAR(12)"
+        }
+      ]
+    },
+    {
+      "path": "outputs/D0/dormant/dim_account.csv",
+      "sha256": "404e4b03041c65593bc41133cf08852cd17cdba41d096b0ee7869638131fdab2",
+      "bytes": 701287,
+      "drop": "D0",
+      "unit": "dormant",
+      "table": "silver.dim_account",
+      "source_table": "nvb_edw.dim_account",
+      "legacy_job": "03_dormant",
+      "row_count": 8000,
+      "keys": [
+        "account_id"
+      ],
+      "columns": [
+        {
+          "name": "account_id",
+          "source_type": "INTEGER"
+        },
+        {
+          "name": "customer_id",
+          "source_type": "INTEGER"
+        },
+        {
+          "name": "product_id",
+          "source_type": "INTEGER"
+        },
+        {
+          "name": "opened_date",
+          "source_type": "DATE"
+        },
+        {
+          "name": "dormant_flag",
+          "source_type": "CHAR(1)"
+        },
+        {
+          "name": "batch_id",
+          "source_type": "BIGINT"
+        },
+        {
+          "name": "src_system_cd",
+          "source_type": "VARCHAR(12)"
+        },
+        {
+          "name": "record_status_cd",
+          "source_type": "CHAR(1)"
+        },
+        {
+          "name": "effective_date",
+          "source_type": "DATE"
+        },
+        {
+          "name": "expiry_date",
+          "source_type": "DATE"
+        },
+        {
+          "name": "currency_cd",
+          "source_type": "CHAR(3)"
+        },
+        {
+          "name": "account_status_cd",
+          "source_type": "VARCHAR(10)"
+        },
+        {
+          "name": "accrual_basis_cd",
+          "source_type": "VARCHAR(8)"
+        },
+        {
+          "name": "overdraft_limit",
+          "source_type": "DECIMAL(18,2)"
+        }
+      ]
+    },
+    {
+      "path": "outputs/D0/monthly_balance/mart_monthly_balance.csv",
+      "sha256": "62529b3cf1c454a22ae8ba5a949434d00a1e4ee0bcec7e54451f7fc365ef4dea",
+      "bytes": 11191075,
+      "drop": "D0",
+      "unit": "monthly_balance",
+      "table": "gold.mart_monthly_balance",
+      "source_table": "nvb_mart.mart_monthly_balance",
+      "legacy_job": "04_monthly_balance",
+      "row_count": 144000,
+      "keys": [
+        "account_id",
+        "month_start"
+      ],
+      "columns": [
+        {
+          "name": "account_id",
+          "source_type": "INTEGER"
+        },
+        {
+          "name": "month_start",
+          "source_type": "DATE"
+        },
+        {
+          "name": "average_balance",
+          "source_type": "DECIMAL(18,2)"
+        },
+        {
+          "name": "closing_balance",
+          "source_type": "DECIMAL(18,2)"
+        },
+        {
+          "name": "batch_id",
+          "source_type": "BIGINT"
+        },
+        {
+          "name": "src_system_cd",
+          "source_type": "VARCHAR(12)"
+        },
+        {
+          "name": "record_status_cd",
+          "source_type": "CHAR(1)"
+        },
+        {
+          "name": "effective_date",
+          "source_type": "DATE"
+        },
+        {
+          "name": "expiry_date",
+          "source_type": "DATE"
+        }
+      ]
+    },
+    {
+      "path": "outputs/D0/customer_segment/mart_customer_segment.csv",
+      "sha256": "31c5fa5d9aff8eaac288fec309adf157feb12ccd3ec40e0e76aab679017d2b7d",
+      "bytes": 391350,
+      "drop": "D0",
+      "unit": "customer_segment",
+      "table": "gold.mart_customer_segment",
+      "source_table": "nvb_mart.mart_customer_segment",
+      "legacy_job": "05_customer_segment",
+      "row_count": 5000,
+      "keys": [
+        "customer_id"
+      ],
+      "columns": [
+        {
+          "name": "customer_id",
+          "source_type": "INTEGER"
+        },
+        {
+          "name": "txn_count",
+          "source_type": "INTEGER"
+        },
+        {
+          "name": "spend",
+          "source_type": "DECIMAL(18,2)"
+        },
+        {
+          "name": "last_txn_date",
+          "source_type": "DATE"
+        },
+        {
+          "name": "segment",
+          "source_type": "VARCHAR(12)"
+        },
+        {
+          "name": "batch_id",
+          "source_type": "BIGINT"
+        },
+        {
+          "name": "src_system_cd",
+          "source_type": "VARCHAR(12)"
+        },
+        {
+          "name": "record_status_cd",
+          "source_type": "CHAR(1)"
+        },
+        {
+          "name": "effective_date",
+          "source_type": "DATE"
+        },
+        {
+          "name": "expiry_date",
+          "source_type": "DATE"
+        }
+      ]
+    },
+    {
+      "path": "outputs/D0/branch_league/mart_branch_performance.csv",
+      "sha256": "01785f30cb0f77cff14585df21d14523064bac226cf55499f66bc974872c9790",
+      "bytes": 611,
+      "drop": "D0",
+      "unit": "branch_league",
+      "table": "gold.mart_branch_performance",
+      "source_table": "nvb_mart.mart_branch_performance",
+      "legacy_job": "06_branch_league",
+      "row_count": 8,
+      "keys": [
+        "branch_id"
+      ],
+      "columns": [
+        {
+          "name": "branch_id",
+          "source_type": "INTEGER"
+        },
+        {
+          "name": "customer_count",
+          "source_type": "INTEGER"
+        },
+        {
+          "name": "net_amount",
+          "source_type": "DECIMAL(18,2)"
+        },
+        {
+          "name": "league_rank",
+          "source_type": "INTEGER"
+        },
+        {
+          "name": "batch_id",
+          "source_type": "BIGINT"
+        },
+        {
+          "name": "src_system_cd",
+          "source_type": "VARCHAR(12)"
+        },
+        {
+          "name": "record_status_cd",
+          "source_type": "CHAR(1)"
+        },
+        {
+          "name": "effective_date",
+          "source_type": "DATE"
+        },
+        {
+          "name": "expiry_date",
+          "source_type": "DATE"
+        }
+      ]
+    },
+    {
+      "path": "outputs/D0/product_profitability/mart_product_profitability.csv",
+      "sha256": "c7101aff490aaced0ddecd96d07a683bd2783112d8b99461c7a6b99791ec1ffd",
+      "bytes": 359,
+      "drop": "D0",
+      "unit": "product_profitability",
+      "table": "gold.mart_product_profitability",
+      "source_table": "nvb_mart.mart_product_profitability",
+      "legacy_job": "07_product_profitability",
+      "row_count": 4,
+      "keys": [
+        "product_id"
+      ],
+      "columns": [
+        {
+          "name": "product_id",
+          "source_type": "INTEGER"
+        },
+        {
+          "name": "average_balance",
+          "source_type": "DECIMAL(18,2)"
+        },
+        {
+          "name": "annual_income",
+          "source_type": "DECIMAL(18,2)"
+        },
+        {
+          "name": "batch_id",
+          "source_type": "BIGINT"
+        },
+        {
+          "name": "src_system_cd",
+          "source_type": "VARCHAR(12)"
+        },
+        {
+          "name": "record_status_cd",
+          "source_type": "CHAR(1)"
+        },
+        {
+          "name": "effective_date",
+          "source_type": "DATE"
+        },
+        {
+          "name": "expiry_date",
+          "source_type": "DATE"
+        }
+      ]
+    },
+    {
+      "path": "outputs/D0/channel/mart_channel_daily.csv",
+      "sha256": "f4fded27e1afb4b011c67782f3821433b6f0eea507e2f4fa13979bf6437d99b7",
+      "bytes": 156581,
+      "drop": "D0",
+      "unit": "channel",
+      "table": "gold.mart_channel_daily",
+      "source_table": "nvb_mart.mart_channel_daily",
+      "legacy_job": "08_channel",
+      "row_count": 2188,
+      "keys": [
+        "txn_date",
+        "channel"
+      ],
+      "columns": [
+        {
+          "name": "txn_date",
+          "source_type": "DATE"
+        },
+        {
+          "name": "channel",
+          "source_type": "VARCHAR(10)"
+        },
+        {
+          "name": "txn_count",
+          "source_type": "INTEGER"
+        },
+        {
+          "name": "net_amount",
+          "source_type": "DECIMAL(18,2)"
+        },
+        {
+          "name": "batch_id",
+          "source_type": "BIGINT"
+        },
+        {
+          "name": "src_system_cd",
+          "source_type": "VARCHAR(12)"
+        },
+        {
+          "name": "record_status_cd",
+          "source_type": "CHAR(1)"
+        },
+        {
+          "name": "effective_date",
+          "source_type": "DATE"
+        },
+        {
+          "name": "expiry_date",
+          "source_type": "DATE"
+        }
+      ]
+    },
+    {
+      "path": "outputs/D0/card_category/mart_card_spend_category.csv",
+      "sha256": "18346676429835650d32ae66af3b68beccef4b16d8a2947bb4305a8de55b8124",
+      "bytes": 351,
+      "drop": "D0",
+      "unit": "card_category",
+      "table": "gold.mart_card_spend_category",
+      "source_table": "nvb_mart.mart_card_spend_category",
+      "legacy_job": "09_card_category",
+      "row_count": 4,
+      "keys": [
+        "category"
+      ],
+      "columns": [
+        {
+          "name": "category",
+          "source_type": "VARCHAR(15)"
+        },
+        {
+          "name": "txn_count",
+          "source_type": "INTEGER"
+        },
+        {
+          "name": "spend",
+          "source_type": "DECIMAL(18,2)"
+        },
+        {
+          "name": "batch_id",
+          "source_type": "BIGINT"
+        },
+        {
+          "name": "src_system_cd",
+          "source_type": "VARCHAR(12)"
+        },
+        {
+          "name": "record_status_cd",
+          "source_type": "CHAR(1)"
+        },
+        {
+          "name": "effective_date",
+          "source_type": "DATE"
+        },
+        {
+          "name": "expiry_date",
+          "source_type": "DATE"
+        }
+      ]
+    },
+    {
+      "path": "outputs/D0/close_batch/etl_batch_control.csv",
+      "sha256": "87e02db982d2c550c11b82d881ca1f9e02830019ae4e99decbeda8250550aaca",
+      "bytes": 311,
+      "drop": "D0",
+      "unit": "close_batch",
+      "table": "silver.etl_batch_control",
+      "source_table": "nvb_edw.etl_batch_control",
+      "legacy_job": "10_close_batch",
+      "row_count": 1,
+      "keys": [
+        "batch_date",
+        "job_name"
+      ],
+      "columns": [
+        {
+          "name": "batch_date",
+          "source_type": "DATE"
+        },
+        {
+          "name": "job_name",
+          "source_type": "VARCHAR(30)"
+        },
+        {
+          "name": "status",
+          "source_type": "VARCHAR(10)"
+        },
+        {
+          "name": "row_count",
+          "source_type": "BIGINT"
+        },
+        {
+          "name": "batch_id",
+          "source_type": "BIGINT"
+        },
+        {
+          "name": "src_system_cd",
+          "source_type": "VARCHAR(12)"
+        },
+        {
+          "name": "record_status_cd",
+          "source_type": "CHAR(1)"
+        },
+        {
+          "name": "effective_date",
+          "source_type": "DATE"
+        },
+        {
+          "name": "expiry_date",
+          "source_type": "DATE"
+        },
+        {
+          "name": "last_step_cd",
+          "source_type": "VARCHAR(30)"
+        },
+        {
+          "name": "window_start_date",
+          "source_type": "DATE"
+        },
+        {
+          "name": "window_end_date",
+          "source_type": "DATE"
+        },
+        {
+          "name": "reject_count",
+          "source_type": "BIGINT"
+        },
+        {
+          "name": "scheduler_group_cd",
+          "source_type": "VARCHAR(12)"
+        }
+      ]
+    },
+    {
+      "path": "controls/D0/expected/nvb_edw.dim_account.json",
+      "sha256": "ff1b8ca750daa0c3472e385a21d2a48a959daadcfabd56a5ef63837adba6aca4",
+      "bytes": 1279,
+      "format": "json"
+    },
+    {
+      "path": "controls/D0/expected/nvb_edw.dim_branch.json",
+      "sha256": "9c4b255e7ca76de2899d5f97ddd18a8e8a00ef826c435d63a9bfc6a687e7f986",
+      "bytes": 1087,
+      "format": "json"
+    },
+    {
+      "path": "controls/D0/expected/nvb_edw.dim_calendar.json",
+      "sha256": "310e1540e8c2053023e062b7c07b22aadf769581e323e985a2ed8bc17dd09d7c",
+      "bytes": 1156,
+      "format": "json"
+    },
+    {
+      "path": "controls/D0/expected/nvb_edw.dim_card.json",
+      "sha256": "9eafd2aafca26e653686fbacff24ef249214b5eed26d0f2c753e23d9a6fa1845",
+      "bytes": 1216,
+      "format": "json"
+    },
+    {
+      "path": "controls/D0/expected/nvb_edw.dim_customer.json",
+      "sha256": "a807d50cdf08f1d96f54d340a055f212d6449d636e5f89a6f9c7138c34bccca1",
+      "bytes": 1303,
+      "format": "json"
+    },
+    {
+      "path": "controls/D0/expected/nvb_edw.dim_merchant.json",
+      "sha256": "8ae57871712b5a68404a68af3800f6c41e3785a43de797e939e2b94aae67671c",
+      "bytes": 1197,
+      "format": "json"
+    },
+    {
+      "path": "controls/D0/expected/nvb_edw.dim_product.json",
+      "sha256": "2e1d08c06d4477f3e85807657e3e06f4ec6d9ec9d3dbe06ff9be492bb2b039fa",
+      "bytes": 1147,
+      "format": "json"
+    },
+    {
+      "path": "controls/D0/expected/nvb_edw.etl_batch_control.json",
+      "sha256": "e68268eee836642055fa046576f45a6130da40458a9fd6fd55ce673604eddb29",
+      "bytes": 1344,
+      "format": "json"
+    },
+    {
+      "path": "controls/D0/expected/nvb_edw.fct_daily_balance.json",
+      "sha256": "694d35fe31e29e163b25aef72c947d00a9c3f15e716ad102364e921540278507",
+      "bytes": 1200,
+      "format": "json"
+    },
+    {
+      "path": "controls/D0/expected/nvb_edw.fct_loan.json",
+      "sha256": "41c0a3d5e0ab0b76005c2ebf7819162b85bbcb26bbfe06fe91d914799075001b",
+      "bytes": 1239,
+      "format": "json"
+    },
+    {
+      "path": "controls/D0/expected/nvb_edw.fct_product_order.json",
+      "sha256": "80908c2d3cb3a076ed3177a0093442c79371179a279097af6b2787d5ad830b7d",
+      "bytes": 1348,
+      "format": "json"
+    },
+    {
+      "path": "controls/D0/expected/nvb_edw.fct_transaction.json",
+      "sha256": "f0f465ffa7be07a8143e6900a9d52f649c23b3127af7a92fbac3e67e7f2ed346",
+      "bytes": 1400,
+      "format": "json"
+    },
+    {
+      "path": "controls/D0/expected/nvb_mart.mart_branch_performance.json",
+      "sha256": "be4436b69c471f147801d7e9561f5f653da97e3884c57bf910fcde3cddada621",
+      "bytes": 994,
+      "format": "json"
+    },
+    {
+      "path": "controls/D0/expected/nvb_mart.mart_card_spend_category.json",
+      "sha256": "2735efd8c0d8a561545814c07b96c0536d4e9980cf7042b7afc93d06b87a84d7",
+      "bytes": 1035,
+      "format": "json"
+    },
+    {
+      "path": "controls/D0/expected/nvb_mart.mart_channel_daily.json",
+      "sha256": "779c4202821e1f1d34bab7199a0e17a202b44e84f593c5dbf7bf4584cf03294f",
+      "bytes": 1128,
+      "format": "json"
+    },
+    {
+      "path": "controls/D0/expected/nvb_mart.mart_customer_segment.json",
+      "sha256": "687f10b4e4acccef6ecce9c1fb26ca34eab007401ffbd8b309f2a32f09fa871e",
+      "bytes": 1165,
+      "format": "json"
+    },
+    {
+      "path": "controls/D0/expected/nvb_mart.mart_monthly_balance.json",
+      "sha256": "4797c93576beae5a476bd40cf1ef60c5c5cb2c4392b81cf253456b7f74b1f538",
+      "bytes": 1083,
+      "format": "json"
+    },
+    {
+      "path": "controls/D0/expected/nvb_mart.mart_product_profitability.json",
+      "sha256": "dceed239abb21c2116cf45415a385eb82a0c599f1b4e802fc44395dc561fd1e3",
+      "bytes": 979,
+      "format": "json"
+    },
+    {
+      "path": "controls/D0/expected/nvb_stg.customer_feed.json",
+      "sha256": "a2c5f2ba45ad8f218791af157d2c1723872a4e45686df19c79478147b0d789df",
+      "bytes": 644,
+      "format": "json"
+    },
+    {
+      "path": "controls/D0/expected/nvb_stg.transaction_feed.json",
+      "sha256": "e006c958c044296356af46ca4bb95140e1d808995fb8bfd37b4ca955450bb033",
+      "bytes": 769,
+      "format": "json"
+    },
+    {
+      "path": "controls/D0/summary.csv",
+      "sha256": "424147d5e518af8412bbd374f43eb6e5cb9e2eec38ddc245d5ca6716de49ab6c",
+      "bytes": 596,
+      "format": "csv"
+    }
+  ]
 }
