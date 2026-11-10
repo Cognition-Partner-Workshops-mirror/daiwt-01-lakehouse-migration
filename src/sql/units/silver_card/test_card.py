@@ -17,7 +17,7 @@ SQL = (UNIT / 'card.pipeline.sql').read_text()
 MANIFEST = json.loads((ROOT / 'golden/manifest.json').read_text())
 PROJECTION = SQL.split('AS SELECT\n', 1)[1].split('\nFROM ', 1)[0]
 COLUMNS = re.findall(r' AS (\w+)(?:,|$)', PROJECTION)
-TYPES = re.findall(r'CAST\(\w+ AS (\w+)\)', PROJECTION)
+TYPES = re.findall(r' AS (\w+)\) AS ', PROJECTION)
 
 
 def cast(value, kind):
@@ -38,7 +38,7 @@ def cast(value, kind):
 
 
 def local_sql(query):
-    return re.sub(r'CAST\(([^()]+) AS (INT|BIGINT|STRING|DATE|TIMESTAMP_NTZ)\)',
+    return re.sub(r"CAST\(((?:NULLIF\(\w+, ''\)|[^()])+?) AS (INT|BIGINT|STRING|DATE|TIMESTAMP_NTZ)\)",
                   lambda m: f"typed_cast({m[1]}, '{m[2]}')", query)
 
 
@@ -112,6 +112,15 @@ def test_quarantine_matches_expectations(rows, column, value):
 def test_status_preserved(rows, status):
     result, rejected = build([{**rows[0], 'record_status_cd': status}])
     assert not rejected and result[0]['record_status_cd'] == status
+
+
+@pytest.mark.parametrize('column', [c for c, kind in zip(COLUMNS, TYPES)
+                                   if kind == 'STRING' and c != 'record_status_cd'])
+def test_bronze_empty_string_sentinel_restores_null(rows, column):
+    result, rejected = build([{**rows[0], 'record_status_cd': '', column: ''}])
+    assert not rejected and len(result) == 1
+    assert result[0]['record_status_cd'] is None
+    assert result[0][column] is None
 
 
 @pytest.mark.parametrize('column,value', [('card_id', 'not-an-integer'), ('card_id', '2147483648'),

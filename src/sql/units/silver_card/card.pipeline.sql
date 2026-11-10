@@ -3,18 +3,18 @@ TBLPROPERTIES ('delta.feature.timestampNtz'='supported')
 AS SELECT
   CAST(card_id AS INT) AS card_id,
   CAST(account_id AS INT) AS account_id,
-  CAST(card_type AS STRING) AS card_type,
+  CAST(NULLIF(card_type, '') AS STRING) AS card_type,
   CAST(batch_id AS BIGINT) AS batch_id,
   CAST(load_ts AS TIMESTAMP_NTZ) AS load_ts,
-  CAST(src_system_cd AS STRING) AS src_system_cd,
-  CAST(record_status_cd AS STRING) AS record_status_cd,
+  CAST(NULLIF(src_system_cd, '') AS STRING) AS src_system_cd,
+  CAST(NULLIF(record_status_cd, '') AS STRING) AS record_status_cd,
   CAST(effective_date AS DATE) AS effective_date,
   CAST(expiry_date AS DATE) AS expiry_date,
-  CAST(network_cd AS STRING) AS network_cd,
-  CAST(card_status_cd AS STRING) AS card_status_cd,
+  CAST(NULLIF(network_cd, '') AS STRING) AS network_cd,
+  CAST(NULLIF(card_status_cd, '') AS STRING) AS card_status_cd,
   CAST(card_expiry_date AS DATE) AS card_expiry_date,
-  CAST(contactless_ind AS STRING) AS contactless_ind,
-  CAST(online_enabled_ind AS STRING) AS online_enabled_ind
+  CAST(NULLIF(contactless_ind, '') AS STRING) AS contactless_ind,
+  CAST(NULLIF(online_enabled_ind, '') AS STRING) AS online_enabled_ind
 FROM ${catalog}.${silver_schema}.asof_edw_dim_card(:drop);
 
 CREATE OR REFRESH PRIVATE MATERIALIZED VIEW card_candidates
