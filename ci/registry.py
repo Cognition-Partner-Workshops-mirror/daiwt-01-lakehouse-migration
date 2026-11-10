@@ -45,7 +45,7 @@ def validate(registry, contract):
             raise ValueError(f"invalid unit name: {unit!r}")
         if not isinstance(spec, dict) or set(spec) != {"job", "legacy_unit", "outputs", "owns", "depends_on"}:
             raise ValueError(f"{unit}: required keys are exactly job, legacy_unit, outputs, owns, depends_on")
-        if not isinstance(spec['legacy_unit'], str) or spec['legacy_unit'] not in set(contract_outputs.values()):
+        if not isinstance(spec['legacy_unit'], str) or spec['legacy_unit'] not in {'foundation', *contract_outputs.values()}:
             raise ValueError(f"{unit}: legacy_unit not in contract")
         job = spec["job"]
         if not isinstance(job, str) or not job.strip():

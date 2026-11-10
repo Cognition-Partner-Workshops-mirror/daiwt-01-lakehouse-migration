@@ -1,6 +1,6 @@
 {
   "job": "sql_macros",
-  "legacy_unit": "customer",
+  "legacy_unit": "foundation",
   "outputs": [],
   "owns": [],
   "depends_on": []

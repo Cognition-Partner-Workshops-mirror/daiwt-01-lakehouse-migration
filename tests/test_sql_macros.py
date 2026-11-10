@@ -44,6 +44,7 @@ def test_only_used_helpers_and_exact_semantics():
 
 def test_registry_and_job_tasks():
     spec = json.loads((UNIT / 'unit.json').read_text())
+    assert spec['legacy_unit'] == 'foundation'
     assert spec['job'] == 'sql_macros'
     assert spec['outputs'] == spec['owns'] == spec['depends_on'] == []
     job = yaml.safe_load((UNIT / 'sql_macros.job.yml').read_text())['resources']['jobs']['sql_macros']

@@ -25,7 +25,9 @@ its job is defined by the scaffold's YAML, conditionally augmented by
 key once in dependency order; selecting entities refreshes all deployed entities
 through the shared job, followed by visible Silver-layer parity.
 `legacy_unit` names a source legacy unit
-present in the parity contract outputs. Every `outputs` table must be a
+present in the parity contract outputs, or explicitly `foundation` for shared
+units. Shared units publish no golden outputs; real output ownership must still
+match that output's legacy unit. Every `outputs` table must be a
 contract table belonging to that legacy unit. `owns` lists other written
 bronze/silver/gold tables and must never contain contract tables. Each table
 has exactly one owner across both lists and all units. Dependencies name

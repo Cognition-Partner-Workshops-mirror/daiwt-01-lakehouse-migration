@@ -35,6 +35,15 @@ def test_valid():
     validate({}, CONTRACT)
 
 
+def test_foundation_is_explicit_without_contract_output():
+    contract = {'outputs': [{'table': 'silver.dim_customer', 'unit': 'customer'}]}
+    validate({'shared': spec()}, contract)
+    with pytest.raises(ValueError, match='another legacy_unit'):
+        validate({'shared': spec(outputs=['silver.dim_customer'])}, contract)
+    with pytest.raises(ValueError, match='legacy_unit not in contract'):
+        validate({'bad': {**spec(), 'legacy_unit': 'unknown'}}, contract)
+
+
 @pytest.mark.parametrize("registry,match", [
     ([], "JSON object"),
     ({"Bad": spec()}, "unit name"),

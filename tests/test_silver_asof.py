@@ -58,6 +58,7 @@ def test_generator_empty_and_schema_error(tmp_path):
 
 def test_metadata_job_and_documentation():
     spec = json.loads((UNIT / 'unit.json').read_text())
+    assert spec['legacy_unit'] == 'foundation'
     assert spec['depends_on'] == ['bronze_landing']
     assert spec['outputs'] == spec['owns'] == []
     job = yaml.safe_load((UNIT / 'silver_asof.job.yml').read_text())['resources']['jobs']['silver_asof']

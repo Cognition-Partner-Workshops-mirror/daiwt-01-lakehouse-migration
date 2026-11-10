@@ -3,8 +3,8 @@
 The sql_macros job installs deterministic SQL UDFs in the silver schema, then
 runs self_check.sql on the same warehouse in a dependent task. These functions
 are drop-independent; the job accepts the standard drop parameter. No tables or
-golden outputs are owned. The registry legacy_unit customer links this shared
-foundation to an existing source contract unit; it does not claim its outputs.
+golden outputs are owned. The registry legacy_unit foundation marks this as shared infrastructure;
+it does not claim customer or other golden outputs.
 
 All legacy/bteq, legacy/macros, legacy/procs, legacy/views, legacy/ddl,
 legacy/schedules and reports files were reviewed. Only semantics actually used

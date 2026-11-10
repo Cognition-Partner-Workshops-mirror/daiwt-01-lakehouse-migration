@@ -1,1 +1,1 @@
-{"job":"silver_asof","legacy_unit":"customer","outputs":[],"owns":[],"depends_on":["bronze_landing"]}
+{"job":"silver_asof","legacy_unit":"foundation","outputs":[],"owns":[],"depends_on":["bronze_landing"]}

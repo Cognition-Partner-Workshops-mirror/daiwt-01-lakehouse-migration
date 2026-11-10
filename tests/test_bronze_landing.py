@@ -75,6 +75,7 @@ def test_lineage_and_fail_closed_reader():
 
 def test_registry_and_task_chain():
     spec = json.loads((UNIT / 'unit.json').read_text())
+    assert spec['legacy_unit'] == 'foundation'
     assert spec['outputs'] == [] and spec['depends_on'] == []
     assert set(spec['owns']) == {'bronze.' + s['name'] for s in SOURCE.values()}
     job = yaml.safe_load((UNIT / 'bronze_landing.job.yml').read_text())['resources']['jobs']['bronze_landing']

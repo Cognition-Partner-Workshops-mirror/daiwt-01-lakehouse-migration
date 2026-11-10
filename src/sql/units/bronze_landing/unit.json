@@ -1,6 +1,6 @@
 {
   "job": "bronze_landing",
-  "legacy_unit": "customer",
+  "legacy_unit": "foundation",
   "outputs": [],
   "owns": [
     "bronze.edw_dim_account",

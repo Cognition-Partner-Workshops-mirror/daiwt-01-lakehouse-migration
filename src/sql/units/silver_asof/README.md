@@ -1,8 +1,8 @@
 # Bronze as-of accessors
 
 Depends on `bronze_landing`. The SQL-file job creates and checks silver-schema
-functions; it owns no tables or golden outputs. `legacy_unit: customer` is only
-the shared framework's contract link, not output ownership.
+functions; it owns no tables or golden outputs. `legacy_unit: foundation` marks
+shared infrastructure rather than a customer output producer.
 
 `drop_seq(d)` accepts exactly uppercase D followed by digits representable as an
 INT. D2 precedes D10; leading zeroes are accepted. Invalid, NULL, negative and

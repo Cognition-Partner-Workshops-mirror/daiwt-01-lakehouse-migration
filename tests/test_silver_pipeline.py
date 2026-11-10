@@ -108,6 +108,7 @@ def test_shared_job_waits_for_entity_specific_dependencies():
 
 def test_scaffold_contract_and_builder_docs():
     spec = json.loads((UNIT / 'unit.json').read_text())
+    assert spec['legacy_unit'] == 'foundation'
     assert spec['depends_on'] == ['silver_asof', 'sql_macros']
     assert spec['outputs'] == spec['owns'] == []
     doc = (UNIT / 'README.md').read_text()
