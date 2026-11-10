@@ -1,0 +1,49 @@
+resources:
+  jobs:
+    gold_channel:
+      name: ${var.job_name_prefix}gold_channel
+      max_concurrent_runs: 1
+      parameters:
+        - name: drop
+          default: D0
+        - name: as_of_date
+          default: "2025-06-30"
+        - name: window_start
+          default: "2024-01-01"
+        - name: batch_id
+          default: "20250630"
+        - name: load_ts
+          default: "2025-06-30 23:00:00"
+      tags:
+        environment: ${bundle.target}
+      tasks:
+        - task_key: build_mart_channel_daily
+          max_retries: 0
+          sql_task:
+            warehouse_id: ${var.warehouse_id}
+            file:
+              path: ./channel_daily.sql
+              source: WORKSPACE
+            parameters:
+              catalog: ${var.catalog}
+              silver_schema: ${var.silver_schema}
+              gold_schema: ${var.gold_schema}
+              drop: "{{job.parameters.drop}}"
+              as_of_date: "{{job.parameters.as_of_date}}"
+              window_start: "{{job.parameters.window_start}}"
+              batch_id: "{{job.parameters.batch_id}}"
+              load_ts: "{{job.parameters.load_ts}}"
+        - task_key: verify_mart_channel_daily
+          max_retries: 0
+          depends_on:
+            - task_key: build_mart_channel_daily
+          sql_task:
+            warehouse_id: ${var.warehouse_id}
+            file:
+              path: ./verify_channel.sql
+              source: WORKSPACE
+            parameters:
+              catalog: ${var.catalog}
+              silver_schema: ${var.silver_schema}
+              gold_schema: ${var.gold_schema}
+              drop: "{{job.parameters.drop}}"
