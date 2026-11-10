@@ -9,14 +9,7 @@ WHERE _drop = ${catalog}.${silver_schema}.resolve_drop(:drop);
 
 CREATE OR REFRESH PRIVATE MATERIALIZED VIEW transaction_feed
 AS SELECT transaction_id, account_id, txn_date, amount, channel, merchant_id
-FROM ${catalog}.${silver_schema}.asof_stg_transaction_feed(:drop)
-UNION ALL
-SELECT * FROM VALUES
-  ('900000001', '1', '2025-01-01', '10.00', 'CARD', '-1'),
-  ('900000002', '1', '2023-12-31', '1,50', ' mobile ', '1'),
-  ('-5', '1', '2025-01-01', 'abc', 'TELLER', '1')
-  AS demo(transaction_id, account_id, txn_date, amount, channel, merchant_id)
-WHERE '${silver_bad_rows}' = 'true';
+FROM ${catalog}.${silver_schema}.asof_stg_transaction_feed(:drop);
 
 CREATE OR REFRESH PRIVATE MATERIALIZED VIEW transaction_checked
 AS WITH typed AS (

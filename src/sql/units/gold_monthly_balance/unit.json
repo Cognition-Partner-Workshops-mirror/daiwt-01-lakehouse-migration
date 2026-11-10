@@ -1,0 +1,1 @@
+{"job":"gold_monthly_balance","legacy_unit":"monthly_balance","outputs":["gold.mart_monthly_balance"],"owns":[],"depends_on":["silver_daily_balance","silver_dormant"]}

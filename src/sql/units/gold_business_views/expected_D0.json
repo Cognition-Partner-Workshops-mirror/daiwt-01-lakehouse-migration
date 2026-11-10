@@ -1,0 +1,13 @@
+{
+  "source": "docs/discovery/target_model.md section 6.1 (expected D0 shape, recomputed from inputs/D0)",
+  "rows": {
+    "v_customer_portfolio": 5000,
+    "v_credit_risk": 1800,
+    "v_channel_trend": 547,
+    "report_branch_league": 8,
+    "report_card_services": 4,
+    "report_finance_monthly": 6,
+    "report_risk_arrears": 329
+  },
+  "v_credit_risk_bands": {"IMPAIRED": 329, "WATCH": 314, "PERFORMING": 1157}
+}

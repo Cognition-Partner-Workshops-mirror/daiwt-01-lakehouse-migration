@@ -50,7 +50,8 @@ The job's `drop` parameter flows to `refresh_silver.pipeline_task.parameters`,
 then the pipeline's named `:drop` binding (default D0), and to parity's `--drop`.
 Do **not** use static `${drop}` configuration substitution for the selected
 delivery; runtime parameters do not override that static configuration.
-`silver_bad_rows` remains a dev-only opt-in demo, false in production.
+`silver_bad_rows` remains a dev-only opt-in demo, false in production. It injects only into
+warn/drop pass-through units; fail-gated units (customer, transactions, dormant) never inject.
 
 Use the active requirements-dev virtualenv for bundle validation/deployment.
 Offline tests cover empty and populated resource shapes; validate both targets

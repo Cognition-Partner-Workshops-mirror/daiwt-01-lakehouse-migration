@@ -139,6 +139,50 @@ def test_registered_read_failure_is_not_skipped():
     assert sum(r["status"] == "FAIL" for r in result["results"]) == 1
 
 
+@pytest.mark.parametrize("catalog", ["daiwt_01_mig_dev", "daiwt_01_mig_prod"])
+@pytest.mark.parametrize("layer,expected", [
+    ("silver", ["silver.customer"]),
+    ("gold", ["gold.channel"]),
+    (None, ["silver.customer", "silver.etl_batch_control", "gold.channel"]),
+])
+def test_silver_parity_only_checks_pipeline_outputs(monkeypatch, catalog, layer, expected):
+    outputs = [dict(path=f"outputs/D0/{unit}/rows.csv", drop="D0", unit=unit,
+                    table=table, columns=["id"], sha256="hash")
+               for unit, table in [("customer", "silver.customer"),
+                                   ("close_batch", "silver.etl_batch_control"),
+                                   ("channel", "gold.channel")]]
+    registry = {
+        "silver_pipeline": dict(job="silver_pipeline", legacy_unit="foundation",
+                                outputs=[], owns=[], depends_on=[]),
+        "silver_customer": dict(job="silver_pipeline", legacy_unit="customer",
+                                outputs=["silver.customer"], owns=[],
+                                depends_on=["silver_pipeline"]),
+        "close_batch": dict(job="close_batch", legacy_unit="close_batch",
+                            outputs=["silver.etl_batch_control"], owns=[], depends_on=[]),
+        "channel": dict(job="channel", legacy_unit="channel", outputs=["gold.channel"],
+                        owns=[], depends_on=[]),
+    }
+    reads, queries = [], []
+    monkeypatch.setattr(GoldenStore, "rows", lambda _, entry: reads.append(entry["table"]) or [])
+    monkeypatch.setattr(Warehouse, "sql", lambda _, query: queries.append(query) or [])
+    result = run(client({"files": outputs}), catalog, "pr_1", "w", registry,
+                 contract={"outputs": outputs}, layer=layer)
+    assert result["status"] == "PASS"
+    assert result["counts"] == {"PASS": len(expected), "FAIL": 0, "SKIP": 0}
+    assert [row["table"] for row in result["results"]] == reads == expected
+    assert len(queries) == len(expected)
+    if layer == "silver":
+        assert "`customer`" in queries[0]
+        assert all("etl_batch_control" not in query for query in queries)
+
+
+def test_silver_parity_without_pipeline_outputs_is_empty():
+    result = run(client(MANIFEST), "daiwt_01_mig_dev", "pr_1", "w", {}, layer="silver")
+    assert result["status"] == "PASS"
+    assert result["results"] == []
+    assert result["compared"] == 0
+
+
 def test_generator_mapping_and_validation():
     entries = copy.deepcopy(CONTRACT["outputs"])
     units = {}

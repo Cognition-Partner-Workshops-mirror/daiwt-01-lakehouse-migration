@@ -10,11 +10,7 @@ SELECT try_cast(trim(customer_id) AS INT) AS customer_id,
        trim(replace(town, char(160), ' ')) AS town,
        CAST(try_to_timestamp(trim(updated_at), 'yyyy-MM-dd HH:mm:ss') AS TIMESTAMP) AS updated_at,
        false AS _demo_row
-FROM ${catalog}.${silver_schema}.asof_stg_customer_feed(:drop)
-UNION ALL
-SELECT CAST(NULL AS INT), 'Dev-only invalid customer', CAST(NULL AS INT),
-       CAST(NULL AS STRING), CAST(NULL AS TIMESTAMP), true
-WHERE '${silver_bad_rows}' = 'true';
+FROM ${catalog}.${silver_schema}.asof_stg_customer_feed(:drop);
 
 CREATE OR REFRESH PRIVATE MATERIALIZED VIEW customer_checked AS
 SELECT r.*,

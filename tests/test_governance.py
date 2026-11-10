@@ -57,16 +57,30 @@ def test_registry_contract_plan_and_escaping():
     assert governance.literal('a\nb\rc\x00') == "'a\\nb\\rc\\0'"
 
 
-@pytest.mark.parametrize('kind,form', [('MANAGED', 'TABLE'), ('EXTERNAL', 'TABLE'),
-    ('VIEW', 'VIEW'), ('MATERIALIZED_VIEW', 'MATERIALIZED VIEW'), ('STREAMING_TABLE', 'STREAMING TABLE')])
+@pytest.mark.parametrize('kind,form', [('MANAGED', 'TABLE'), ('EXTERNAL', 'TABLE'), ('VIEW', 'VIEW')])
 def test_statement_forms(kind, form):
     args = fixture()
     args[5][('s', 'items')]['table_type'] = kind
     plan = governance.build_plan(*args)[0]
     sql = dict(plan['statements'])
-    assert sql['comment'].startswith(f'COMMENT ON {form} ')
+    comment_form = 'TABLE' if kind in ('MATERIALIZED_VIEW', 'STREAMING_TABLE') else form
+    assert sql['comment'].startswith(f'COMMENT ON {comment_form} ')
     assert sql['tags'].startswith(f'ALTER {form} ')
     assert sql['owner'].startswith(f'ALTER {form} ')
+
+
+@pytest.mark.parametrize('kind,form', [('MATERIALIZED_VIEW', 'MATERIALIZED VIEW'),
+                                       ('STREAMING_TABLE', 'STREAMING TABLE')])
+def test_pipeline_object_statements(kind, form):
+    args = fixture()
+    args[5][('s', 'items')]['table_type'] = kind
+    plan = governance.build_plan(*args)[0]
+    sql = dict(plan['statements'])
+    assert plan['pipeline']
+    assert sql['comment'].startswith('COMMENT ON TABLE ')
+    assert sql['tags'].startswith(f'ALTER {form} ')
+    assert 'owner' not in sql
+    assert not any(f'COMMENT ON {form}' in statement for statement in sql.values())
 
 
 def test_empty_missing_and_invalid_contract():
@@ -280,3 +294,11 @@ def test_notebook_flow_and_check_failures(monkeypatch, action, broken):
         assert ('APPLIED' if action == 'apply' else 'PASS') in saved['summary']
     if action == 'check':
         assert queries == []
+
+
+def test_pipeline_owner_not_checked():
+    plan = dict(schema='s', name='mv', comment='c', owner='team', pipeline=True, columns={}, tags={})
+    tables = {('s', 'mv'): dict(comment='c', table_owner='pipeline-runner')}
+    assert governance.mismatches(plan, tables, {}, {}) == []
+    plan['pipeline'] = False
+    assert governance.mismatches(plan, tables, {}, {}) == ['owner']

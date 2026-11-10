@@ -221,6 +221,10 @@ def run(client, catalog, suffix, warehouse_id, registry, drop="D0", *, contract=
     entries = contract_entries(contract, store.manifest(), drop)
     if layer is not None:
         entries = [entry for entry in entries if entry["table"].startswith(layer + ".")]
+    if layer == "silver":
+        silver_outputs = {table for spec in registry.values() if spec["job"] == "silver_pipeline"
+                          for table in spec["outputs"]}
+        entries = [entry for entry in entries if entry["table"] in silver_outputs]
     result = compare({"tables": entries}, registry, store.rows, actual,
                      ran_units if catalog.endswith("_dev") else None)
     for row in result["results"]:
