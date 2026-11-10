@@ -177,7 +177,20 @@ def test_manifest_matches_harness_layout(tmp_path):
                 for u in units_for(manifest)}
     result = compare({"tables": outputs}, registry, read_golden, read_golden)
     assert result["status"] == "PASS" and len(result["results"]) == 10
+    capture.write_json(root / "manifest.json", manifest)
+    pin = {"capture_id": manifest["capture_id"],
+           "manifest_sha256": hashlib.sha256((root / "manifest.json").read_bytes()).hexdigest()}
+    capture.write_json(root / "PROVENANCE.json", pin)
+    capture.write_json(root / "skipped_branches.json", {"capture_id": manifest["capture_id"]})
     assert capture.verify(root, manifest) == len(manifest["files"])
+    capture.write_json(root / "skipped_branches.json", {"capture_id": "other"})
+    with pytest.raises(ValueError, match="skipped_branches.json"):
+        capture.verify(root, manifest)
+    capture.write_json(root / "skipped_branches.json", {"capture_id": manifest["capture_id"]})
+    capture.write_json(root / "PROVENANCE.json", {**pin, "manifest_sha256": "0" * 64})
+    with pytest.raises(ValueError, match="does not pin"):
+        capture.verify(root, manifest)
+    capture.write_json(root / "PROVENANCE.json", pin)
     (root / outputs[0]["path"]).write_text("tampered\n")
     with pytest.raises(ValueError, match="checksum mismatches"):
         capture.verify(root, manifest)

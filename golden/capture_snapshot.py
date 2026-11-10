@@ -358,6 +358,15 @@ def verify(root, manifest):
     bad = [f["path"] for f in manifest["files"] if digest(root / f["path"]) != f["sha256"]]
     if bad:
         raise ValueError(f"checksum mismatches: {bad}")
+    provenance, inventory = root / "PROVENANCE.json", root / "skipped_branches.json"
+    if provenance.exists():
+        pinned = json.loads(provenance.read_text())
+        if pinned.get("manifest_sha256") != digest(root / "manifest.json"):
+            raise ValueError("PROVENANCE.json does not pin this manifest")
+        if pinned.get("capture_id") != manifest["capture_id"]:
+            raise ValueError("PROVENANCE.json capture_id differs from manifest")
+    if inventory.exists() and json.loads(inventory.read_text()).get("capture_id") != manifest["capture_id"]:
+        raise ValueError("skipped_branches.json capture_id differs from manifest")
     return len(manifest["files"])
 
 
