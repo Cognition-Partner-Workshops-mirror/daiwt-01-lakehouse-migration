@@ -1,0 +1,24 @@
+resources:
+  jobs:
+    full_job_verification:
+      name: ${var.job_name_prefix}full_job_verification
+      environments:
+        - environment_key: parity
+          spec:
+            environment_version: '2'
+            dependencies:
+              - databricks-sdk>=0.85,<1
+              - PyYAML>=6,<7
+      tasks:
+        - task_key: verify_full_job
+          environment_key: parity
+          max_retries: 0
+          spark_python_task:
+            python_file: ../src/parity/full_job_check.py
+            parameters:
+              - --suffix
+              - ${var.schema_suffix}
+              - --warehouse-id
+              - ${var.warehouse_id}
+              - --output
+              - /tmp/daiwt-01-full-job-parity.json

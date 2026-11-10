@@ -230,3 +230,44 @@ Builder and production verification also run the shared `verification` bundle jo
 Its visible `verify` Python task exits nonzero on parity failure; CLI parity still
 writes local evidence. This shared job is not a migrated unit. Unit job execution
 uses `databricks bundle summary` deployment state (never workspace name lookup).
+
+## Pre-promotion full-job checklist
+
+Keep the pre-promotion PR open until all contract-producing Silver/Gold units and
+governance are on main. Do not treat partial unit evidence as full-job evidence.
+After explicit approval to deploy/run dev, from a clean, pushed HEAD:
+
+```bash
+source .venv/bin/activate
+bash ci/full_job_verify.sh pr_<n>
+```
+
+This separate entry point requires every D0 contract output to have a producer
+before deployment. It deploys only dev with `schema_suffix`, finds jobs through
+`databricks bundle summary`, runs `nvb_nightly` with `drop=D0`, then runs the
+visible `full_job_verification.verify_full_job` task. A mismatch fails that task.
+It reuses exact output parity and additionally verifies checksummed
+`controls/D0/expected/*.json` and `summary.csv` against dev table counts, distinct
+values, two-decimal reference sums, date ranges, category counts and input counts.
+Control metrics follow the manifest's declared `excluded_from_parity` columns
+(currently the output-only constant `load_ts`); no additional exclusions or numeric
+tolerances are introduced. All goldens are read from
+`/Volumes/daiwt_01_mig_prod/landing/golden/`; no production writes occur.
+The same checker produces local `out/parity-D0.json`, `attestation.md` and run URLs,
+then the existing recorder writes PASS/FAIL to
+`daiwt_01_mig_dev.default.unit_attestation` with selection `full-job` and all units.
+Unit PR verification and attestation semantics are unchanged.
+
+- Use a fresh PR suffix. Do not rerun over an admitted RUNNING batch; inspect and
+  resolve its state first. This entry point does not silently reset control state.
+- Confirm every unit job, `release_export`, `reconcile`, and every business
+  view/report is present. Governance must follow every publish gate with
+  `run_if: NONE_FAILED`; the failure handler uses `AT_LEAST_ONE_FAILED`.
+- Require full D0 parity/control PASS and successful governance checking before
+  promotion approval. Keep all workflow concurrency `cancel-in-progress: false`.
+- Governance's job-local `data_owner` defaults empty (leave UC owners unchanged).
+  Agree on an approved UC principal before setting it on the governance job;
+  `business_owner` tags are business teams, not UC principals. No grants are made.
+- The production schedule **stays PAUSED until explicit cutover approval**.
+  Approval must also cover ownership, operational sign-off and notifications.
+  Do not deploy/run production as part of this dev verification entry point.

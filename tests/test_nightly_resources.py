@@ -6,6 +6,7 @@ from types import SimpleNamespace
 
 import pytest
 from databricks.bundles.jobs import Job
+from registry import load
 
 ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location('nightly_resources', ROOT / 'nightly_resources.py')
@@ -100,6 +101,32 @@ def test_governance_is_last_non_failure_task_and_waits_for_all():
     assert 'governance' in deps(generated['batch_fail'])
     assert 'reconcile' in deps(generated['governance'])
     assert set(nightly.VIEWS) <= deps(generated['governance'])
+
+
+def test_real_registry_publish_gates():
+    registry = load(ROOT)
+    generated = tasks(registry)
+    assert generated['governance']['run_if'] == 'NONE_FAILED'
+    assert deps(generated['governance']) == set(generated) - {'governance', 'batch_fail'}
+    assert {spec['job'] for spec in registry.values()} <= set(generated)
+    assert generated['batch_fail']['run_if'] == 'AT_LEAST_ONE_FAILED'
+    assert deps(generated['batch_fail']) == set(generated) - {'batch_fail'}
+
+
+def test_all_contract_units_and_publish_gates_precede_governance():
+    registry = full_registry()
+    registry['governance'] = unit('governance')
+    assert {entry['unit'] for entry in CONTRACT['outputs']} == set(nightly.LEGACY_ORDER)
+    assert {entry['table'] for entry in CONTRACT['outputs']} == {
+        table for spec in registry.values() for table in spec['outputs']}
+    generated = tasks(registry)
+    gates = {spec['job'] for spec in registry.values()} - {'governance'}
+    gates |= {'release_export', 'reconcile', *nightly.VIEWS}
+    assert gates <= deps(generated['governance'])
+    assert generated['governance']['run_if'] == 'NONE_FAILED'
+    assert deps(generated['governance']) == set(generated) - {'governance', 'batch_fail'}
+    assert generated['batch_fail']['run_if'] == 'AT_LEAST_ONE_FAILED'
+    assert deps(generated['batch_fail']) == set(generated) - {'batch_fail'}
 
 
 def test_conditional_controls_and_views_require_every_producer():
