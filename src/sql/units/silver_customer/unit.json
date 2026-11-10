@@ -2,6 +2,6 @@
   "job": "silver_pipeline",
   "legacy_unit": "customer",
   "outputs": ["silver.dim_customer"],
-  "owns": ["silver.customer_quarantine"],
+  "owns": ["silver.dim_customer_quarantine"],
   "depends_on": ["silver_pipeline", "silver_branch"]
 }

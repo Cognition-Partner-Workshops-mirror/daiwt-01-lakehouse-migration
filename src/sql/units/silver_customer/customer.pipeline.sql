@@ -8,11 +8,12 @@ SELECT try_cast(trim(customer_id) AS INT) AS customer_id,
        trim(replace(customer_name, char(160), ' ')) AS customer_name,
        try_cast(trim(branch_id) AS INT) AS branch_id,
        trim(replace(town, char(160), ' ')) AS town,
-       CAST(try_to_timestamp(trim(updated_at), 'yyyy-MM-dd HH:mm:ss') AS TIMESTAMP) AS updated_at
+       CAST(try_to_timestamp(trim(updated_at), 'yyyy-MM-dd HH:mm:ss') AS TIMESTAMP) AS updated_at,
+       false AS _demo_row
 FROM ${catalog}.${silver_schema}.asof_stg_customer_feed(:drop)
 UNION ALL
 SELECT CAST(NULL AS INT), 'Dev-only invalid customer', CAST(NULL AS INT),
-       CAST(NULL AS STRING), CAST(NULL AS TIMESTAMP)
+       CAST(NULL AS STRING), CAST(NULL AS TIMESTAMP), true
 WHERE '${silver_bad_rows}' = 'true';
 
 CREATE OR REFRESH PRIVATE MATERIALIZED VIEW customer_checked AS
@@ -23,7 +24,7 @@ SELECT r.*,
 FROM customer_candidates r
 LEFT JOIN ${catalog}.${silver_schema}.dim_branch b ON r.branch_id = b.branch_id;
 
-CREATE OR REFRESH MATERIALIZED VIEW customer_quarantine AS
+CREATE OR REFRESH MATERIALIZED VIEW ${catalog}.${silver_schema}.dim_customer_quarantine AS
 SELECT customer_id, customer_name, branch_id, town, updated_at,
        'Invalid customer ID, name, timestamp or branch reference' AS reason
 FROM customer_checked
@@ -32,14 +33,15 @@ WHERE NOT valid_customer;
 CREATE OR REFRESH PRIVATE MATERIALIZED VIEW customer_delivery AS
 SELECT customer_id, customer_name, branch_id, town, updated_at
 FROM customer_checked
-WHERE CASE WHEN (SELECT count(*) FROM customer_quarantine) = 0 THEN true
+WHERE NOT _demo_row
+  AND CASE WHEN (SELECT count(*) FROM customer_checked WHERE NOT valid_customer AND NOT _demo_row) = 0 THEN true
            ELSE raise_error('Customer delivery rejected: invalid customer rows') END
 QUALIFY row_number() OVER (
     PARTITION BY customer_id
     ORDER BY updated_at DESC, customer_name DESC, town DESC, branch_id DESC
 ) = 1;
 
-CREATE OR REFRESH MATERIALIZED VIEW dim_customer (
+CREATE OR REFRESH MATERIALIZED VIEW ${catalog}.${silver_schema}.dim_customer (
     customer_id INT,
     customer_name STRING,
     branch_id INT,
