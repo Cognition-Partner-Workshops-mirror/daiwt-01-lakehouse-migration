@@ -1,0 +1,8 @@
+name: transactions
+layer: silver
+sql:
+  - 01_fct_transaction.sql
+outputs:
+  - table: silver.fct_transaction
+    golden: outputs/D0/transactions/fct_transaction.csv
+    keys: [transaction_id]
