@@ -34,14 +34,24 @@ spend_by_category AS (
   FROM card_txn
   GROUP BY COALESCE(category, 'UNCLASSIFIED')
 ),
+vt_card_control AS (
+  SELECT m.category, COUNT(*) AS txn_count, SUM(-t.amount) AS spend
+  FROM IDENTIFIER(:catalog || '.' || :silver_schema || '.fct_transaction') AS t
+  INNER JOIN merchant AS m ON t.merchant_id = m.merchant_id
+  WHERE t.channel = 'CARD' AND t.amount < 0
+  GROUP BY m.category
+),
 control AS (
   SELECT CAST(
     CASE
-      WHEN COUNT_IF(spend < 0 OR category IS NULL) > 0
+      WHEN COUNT_IF(w.spend < 0 OR w.category IS NULL) > 0
         THEN 'REJECTED 09_card_category: negative spend or null category'
+      WHEN COUNT_IF(s.category IS NULL OR s.spend <> w.spend OR s.txn_count <> w.txn_count) > 0
+        THEN 'REJECTED 09_card_category: published totals do not reconcile'
       ELSE '0'
     END AS INT) AS rejected
-  FROM spend_by_category
+  FROM vt_card_control AS w
+  LEFT JOIN spend_by_category AS s ON w.category = s.category
 )
 SELECT
   CAST(s.category AS STRING) AS category,
