@@ -1,0 +1,10 @@
+name: monthly_balance
+layer: gold
+sql:
+  - 01_validate.sql
+  - 02_monthly_balance.sql
+  - 03_reconcile.sql
+outputs:
+  - table: gold.mart_monthly_balance
+    golden: outputs/D0/monthly_balance/mart_monthly_balance.csv
+    keys: [account_id, month_start]
