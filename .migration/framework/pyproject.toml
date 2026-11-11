@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "migration-ci"
+version = "1.0.4"
+requires-python = ">=3.10"
+dependencies = ["PyYAML>=6,<7", "sqlglot>=26,<29", "duckdb>=1.2,<2", "databricks-sdk>=0.85,<1", "databricks-bundles==1.25.0"]
+
+[project.scripts]
+migration-ci = "migration_ci.cli:main"
+
+[tool.setuptools]
+packages = ["migration_ci"]
+
+[tool.setuptools.package-data]
+migration_ci = ["workflows/*.py"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

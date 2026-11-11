@@ -1,0 +1,37 @@
+name: Migration promote
+'on':
+  workflow_dispatch:
+    inputs:
+      drops:
+        description: Comma-separated drops, or all (estate order)
+        default: all
+        type: string
+permissions:
+  contents: read
+  id-token: write
+jobs:
+  migration:
+    runs-on: ubuntu-latest
+    environment: prod
+    env:
+      DATABRICKS_AUTH_TYPE: github-oidc
+      DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST }}
+      DATABRICKS_CLIENT_ID: ${{ vars.DATABRICKS_CLIENT_ID }}
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    - run: python -m pip install -r requirements-dev.txt
+    - uses: databricks/setup-cli@main
+      with:
+        version: 1.25.0
+    - run: databricks bundle deploy -t prod
+    - run: migration-ci integrate --target prod --drops "$DROPS"
+      env:
+        DROPS: ${{ inputs.drops }}
+concurrency:
+  group: promote
+  cancel-in-progress: false

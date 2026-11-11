@@ -1,1 +1,0 @@
-{"job":"close_batch","legacy_unit":"close_batch","outputs":["silver.etl_batch_control"],"owns":[],"depends_on":["silver_transactions","gold_channel"]}

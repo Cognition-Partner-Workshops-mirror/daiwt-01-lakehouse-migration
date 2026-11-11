@@ -1,1 +1,0 @@
-{"job": "gold_product_profitability", "legacy_unit": "product_profitability", "outputs": ["gold.mart_product_profitability"], "owns": [], "depends_on": ["silver_daily_balance", "silver_dormant", "silver_product"]}

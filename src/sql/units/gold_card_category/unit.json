@@ -1,7 +1,0 @@
-{
-  "job": "gold_card_category",
-  "legacy_unit": "card_category",
-  "outputs": ["gold.mart_card_spend_category"],
-  "owns": [],
-  "depends_on": ["silver_transactions", "silver_merchant"]
-}

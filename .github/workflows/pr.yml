@@ -1,72 +1,35 @@
-name: pr
-on:
-  pull_request:
-    branches: [main, pre-migration]
+name: Migration PR
+'on':
+  pull_request: {}
 permissions:
   contents: read
   id-token: write
-  pull-requests: write
-concurrency:
-  group: pr-${{ github.event.pull_request.number }}
-  cancel-in-progress: false
 jobs:
-  unit-tests:
+  migration:
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - run: pip install -r requirements-dev.txt
-      - run: python -m pytest -q
-  validate:
-    if: github.event.pull_request.head.repo.full_name == github.repository
     environment: dev
-    runs-on: ubuntu-latest
     env:
       DATABRICKS_AUTH_TYPE: github-oidc
       DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST }}
       DATABRICKS_CLIENT_ID: ${{ vars.DATABRICKS_CLIENT_ID }}
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - run: pip install -r requirements-dev.txt
-      - uses: databricks/setup-cli@main
-        with:
-          version: 1.25.0
-      - run: databricks bundle validate --strict -t prod
-      - run: databricks bundle validate --strict -t dev --var schema_suffix=pr_${{ github.event.pull_request.number }}
-  attestation:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    - run: python -m pip install -r requirements-dev.txt
+    - uses: databricks/setup-cli@main
+      with:
+        version: 1.25.0
+    - run: python -m pytest -q
+    - run: migration-ci fetch-goldens --changed-from "$BASE_REF"
+      env:
+        BASE_REF: ${{ github.event.pull_request.base.sha }}
+    - run: migration-ci check --changed-from "$BASE_REF"
+      env:
+        BASE_REF: ${{ github.event.pull_request.base.sha }}
+    - run: databricks bundle validate --strict -t dev
+    - run: databricks bundle validate --strict -t prod
     if: github.event.pull_request.head.repo.full_name == github.repository
-    environment: dev
-    runs-on: ubuntu-latest
-    env:
-      DATABRICKS_AUTH_TYPE: github-oidc
-      DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST }}
-      DATABRICKS_CLIENT_ID: ${{ vars.DATABRICKS_CLIENT_ID }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          fetch-depth: 0
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - run: pip install -r requirements-dev.txt
-      - name: Check pushed-head evidence
-        id: evidence
-        continue-on-error: true
-        run: python ci/check_attestation.py --head-sha '${{ github.event.pull_request.head.sha }}' --base-sha '${{ github.event.pull_request.base.sha }}' --suffix pr_${{ github.event.pull_request.number }}
-      - uses: marocchino/sticky-pull-request-comment@v2
-        if: always()
-        with:
-          header: daiwt-01-parity
-          path: attestation.md
-      - if: always()
-        run: |
-          if [ -f attestation.md ]; then cat attestation.md >> "$GITHUB_STEP_SUMMARY"; fi
-          test '${{ steps.evidence.outcome }}' = success

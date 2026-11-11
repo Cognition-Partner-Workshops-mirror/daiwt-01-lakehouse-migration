@@ -1,7 +1,0 @@
-{
-  "job": "gold_branch_league",
-  "legacy_unit": "branch_league",
-  "outputs": ["gold.mart_branch_performance"],
-  "owns": [],
-  "depends_on": ["silver_customer", "silver_dormant", "silver_transactions", "silver_branch"]
-}

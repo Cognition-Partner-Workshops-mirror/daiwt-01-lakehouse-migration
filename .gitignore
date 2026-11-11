@@ -1,13 +1,6 @@
+.goldens/
+.databricks/
 .venv/
 __pycache__/
+*.egg-info/
 .pytest_cache/
-.databricks/
-out/
-attestation.md
-*.pyc
-.env
-golden/inputs/
-golden/outputs/
-golden/controls/
-golden/legacy/
-golden/run/
