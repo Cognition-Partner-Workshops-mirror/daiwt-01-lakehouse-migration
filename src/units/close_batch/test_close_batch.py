@@ -28,6 +28,11 @@ def test_materializes_from_empty_output_and_restarts(db):
     execute_unit(db)
     execute_unit(db)
     assert db.execute('''
+        SELECT data_type FROM information_schema.columns
+        WHERE table_schema = 'silver' AND table_name = 'etl_batch_control'
+          AND column_name = 'row_count'
+    ''').fetchone() == ('BIGINT',)
+    assert db.execute('''
         SELECT CAST(batch_date AS VARCHAR), job_name, status, row_count, batch_id,
                CAST(load_ts AS VARCHAR), src_system_cd, record_status_cd,
                CAST(effective_date AS VARCHAR), CAST(expiry_date AS VARCHAR),
@@ -51,12 +56,12 @@ def test_materializes_from_empty_output_and_restarts(db):
 ])
 def test_rejects_unreconciled_release(db, mutation):
     db.execute(mutation)
-    with pytest.raises(duckdb.InvalidInputException, match='More than one row returned by a subquery'):
+    with pytest.raises(duckdb.ConversionException, match='close_batch control gate failed'):
         execute_unit(db)
 
 
 def test_rejects_both_inputs_empty(db):
     db.execute('DELETE FROM gold.mart_channel_daily')
     db.execute('DELETE FROM silver.fct_transaction')
-    with pytest.raises(duckdb.InvalidInputException, match='More than one row returned by a subquery'):
+    with pytest.raises(duckdb.ConversionException, match='close_batch control gate failed'):
         execute_unit(db)
