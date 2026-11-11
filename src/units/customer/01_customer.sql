@@ -4,7 +4,7 @@ WITH customer_raw AS (
         TRIM(REPLACE(customer_name, CHAR(160), ' ')) AS customer_name,
         TRY_CAST(TRIM(branch_id) AS INT) AS branch_id,
         TRIM(REPLACE(town, CHAR(160), ' ')) AS town,
-        DATE_TRUNC('SECOND', TRY_CAST(TRIM(updated_at) AS TIMESTAMP)) AS updated_at
+        DATE_TRUNC('SECOND', TRY_CAST(TRIM(updated_at) AS TIMESTAMP_NTZ)) AS updated_at
     FROM IDENTIFIER(:catalog || '.' || :bronze_schema || '.customer_feed')
 )
 SELECT CASE WHEN COUNT(*) = 0 THEN 0
@@ -24,7 +24,7 @@ WITH customer_raw AS (
         TRIM(REPLACE(customer_name, CHAR(160), ' ')) AS customer_name,
         TRY_CAST(TRIM(branch_id) AS INT) AS branch_id,
         TRIM(REPLACE(town, CHAR(160), ' ')) AS town,
-        DATE_TRUNC('SECOND', TRY_CAST(TRIM(updated_at) AS TIMESTAMP)) AS updated_at
+        DATE_TRUNC('SECOND', TRY_CAST(TRIM(updated_at) AS TIMESTAMP_NTZ)) AS updated_at
     FROM IDENTIFIER(:catalog || '.' || :bronze_schema || '.customer_feed')
 )
 SELECT
@@ -32,9 +32,9 @@ SELECT
     CAST(customer_name AS STRING) AS customer_name,
     CAST(branch_id AS INT) AS branch_id,
     CAST(town AS STRING) AS town,
-    CAST(updated_at AS TIMESTAMP) AS updated_at,
+    CAST(updated_at AS TIMESTAMP_NTZ) AS updated_at,
     CAST(20250630 AS BIGINT) AS batch_id,
-    CAST('2025-06-30 23:00:00' AS TIMESTAMP) AS load_ts,
+    CAST('2025-06-30 23:00:00' AS TIMESTAMP_NTZ) AS load_ts,
     CAST('COREBANK' AS STRING) AS src_system_cd,
     CAST('A' AS STRING) AS record_status_cd,
     CAST('2024-01-01' AS DATE) AS effective_date,

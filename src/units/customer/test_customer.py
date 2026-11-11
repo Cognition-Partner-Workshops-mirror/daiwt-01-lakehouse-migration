@@ -40,7 +40,7 @@ def test_current_customer_and_defaults(db):
         residence_country_cd, preferred_language_cd, kyc_status_cd, consent_marketing_ind,
         CAST(load_ts AS VARCHAR) FROM silver.dim_customer WHERE customer_id = 1''').fetchone() == (
         20250630, 'COREBANK', 'A', '2024-01-01', '9999-12-31', 'PERSONAL',
-        'NO', 'nb', 'VERIFIED', 'N', '2025-06-30 23:00:00+00'
+        'NO', 'nb', 'VERIFIED', 'N', '2025-06-30 23:00:00'
     )
 
 
