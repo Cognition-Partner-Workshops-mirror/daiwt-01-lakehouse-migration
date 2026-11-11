@@ -8,9 +8,9 @@ Both repositories were already cloned. The read-only manifest at `/Volumes/daiwt
 
 ## Dependency graph
 
-Edges are data dependencies, plus all preceding units as release prerequisites for close_batch. The legacy scheduler serializes jobs 01 through 10; dependencies here do not duplicate incidental timing edges. Transactions validates original landed accounts, not the derived dormant account output. Landed reference tables are input prerequisites, not additional output units.
+Edges are data dependencies. Scheduler-only ordering of jobs 01–09 is not a data dependency; close_batch's reconciliation against gold.mart_channel_daily is. Transactions validates original landed accounts, not the derived dormant account output. Landed reference tables are input prerequisites, not additional output units. Offline parity seeds referenced non-owned tables, including gold.mart_channel_daily, from goldens, so close_batch can be built in the Silver wave. The runtime bundle derives its task DAG from SQL references and runs close_batch after transactions and channel.
 
-**Execution constraint:** close_batch is silver by its output schema but depends on Gold. The current two-wave workflow blindly starts all Silver first; it cannot run this plan unchanged. A future orchestration step must schedule close_batch after Gold (and honor dependencies within Silver). Do not remove real dependencies or duplicate control-table ownership to fit the wave order.
+Build in two large parallel waves: one builder per Silver target table, all in parallel, followed by one builder per Gold target table, all in parallel. Each of the ten units owns exactly one target table. Intra-Silver dependencies (including dormant on customer/transactions) and close_batch's Gold reference are satisfied offline from goldens; no Silver unit needs sequencing inside its build wave. These build waves are distinct from the deployed runtime data-dependency DAG.
 
 ```mermaid
 flowchart TD
@@ -33,15 +33,8 @@ flowchart TD
   dormant --> product_profitability
   transactions --> channel
   transactions --> card_category
-  customer --> close_batch
   transactions --> close_batch
-  dormant --> close_batch
-  monthly_balance --> close_batch
-  customer_segment --> close_batch
-  branch_league --> close_batch
-  product_profitability --> close_batch
   channel --> close_batch
-  card_category --> close_batch
 ```
 
 ## Producer and golden ownership
