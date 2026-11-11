@@ -1,0 +1,10 @@
+name: customer_segment
+layer: gold
+sql:
+  - 01_validate.sql
+  - 02_mart_customer_segment.sql
+  - 03_reconcile.sql
+outputs:
+  - table: gold.mart_customer_segment
+    golden: outputs/D0/customer_segment/mart_customer_segment.csv
+    keys: [customer_id]
