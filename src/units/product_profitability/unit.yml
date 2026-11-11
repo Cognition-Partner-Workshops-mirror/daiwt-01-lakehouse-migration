@@ -1,0 +1,9 @@
+name: product_profitability
+layer: gold
+sql:
+  - 01_validate.sql
+  - 02_mart_product_profitability.sql
+outputs:
+  - table: gold.mart_product_profitability
+    golden: outputs/D0/product_profitability/mart_product_profitability.csv
+    keys: [product_id]
