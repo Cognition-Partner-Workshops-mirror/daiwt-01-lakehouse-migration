@@ -1,34 +1,37 @@
-name: reset
-on:
+name: Migration reset
+'on':
   workflow_dispatch:
     inputs:
       target:
+        description: Target to destroy
         type: choice
-        options: [dev, prod]
+        options:
+        - dev
+        - prod
         required: true
-      confirm:
-        type: string
-        required: true
+        default: dev
 permissions:
   contents: read
   id-token: write
-concurrency:
-  group: reset-${{ inputs.target }}
-  cancel-in-progress: false
 jobs:
-  reset:
-    if: inputs.confirm == inputs.target
-    environment: ${{ inputs.target }}
+  migration:
     runs-on: ubuntu-latest
+    environment: ${{ inputs.target }}
     env:
       DATABRICKS_AUTH_TYPE: github-oidc
       DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST }}
       DATABRICKS_CLIENT_ID: ${{ vars.DATABRICKS_CLIENT_ID }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - run: pip install -r requirements-dev.txt
-      - uses: databricks/setup-cli@main
-      - run: bash ci/reset.sh "${{ inputs.target }}"
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    - run: python -m pip install -r requirements-dev.txt
+    - uses: databricks/setup-cli@main
+      with:
+        version: 1.25.0
+    - run: migration-ci reset --target "$TARGET"
+      env:
+        TARGET: ${{ inputs.target }}

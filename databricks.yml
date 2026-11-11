@@ -1,83 +1,45 @@
 bundle:
-  name: daiwt-01-migration
+  name: daiwt_01-migration
   databricks_cli_version: '>= 1.25.0'
-
 python:
   resources:
-    - 'silver_resources:load_resources'
-    - 'nightly_resources:load_resources'
-  mutators:
-    - 'silver_resources:configure_silver_job'
-
-include: [src/sql/units/*/*.yml, ci/*.job.yml]
-
+  - migration_resources:load_resources
+sync:
+  include:
+  - .migration/framework/**
+  - estate.yml
 variables:
-  nightly_pause_status:
-    description: Keep the nightly schedule paused until cutover is approved.
-    default: PAUSED
-  silver_bad_rows:
-    description: Dev-only synthetic quarantine rows; never enable in production.
-    default: "false"
   catalog:
-    description: Target Unity Catalog catalog.
+    description: Target catalog
   schema_suffix:
-    default: ${workspace.current_user.short_name}
-  bronze_schema:
-    default: bronze_${var.schema_suffix}
-  silver_schema:
-    default: silver_${var.schema_suffix}
-  gold_schema:
-    default: gold_${var.schema_suffix}
+    description: Optional isolated schema suffix, e.g. _pilot
+    default: ''
   warehouse_id:
     default: 6dc4b80538621b7b
   golden_path:
-    default: /Volumes/daiwt_01_mig_prod/landing/golden
-  job_name_prefix:
-    description: Prefix for bundle job names (presets.name_prefix would also rename schemas).
-    default: "[${var.schema_suffix}] "
-
+    default: /Volumes/daiwt_01_mig_prod/migration_ci_fixtures/golden
 targets:
   dev:
-    default: true
     permissions:
-      - service_principal_name: ${workspace.current_user.userName}
-        level: CAN_MANAGE
-      - group_name: users
-        level: CAN_VIEW
-    presets:
-      trigger_pause_status: PAUSED
+    - service_principal_name: ${workspace.current_user.userName}
+      level: CAN_MANAGE
+    - group_name: users
+      level: CAN_VIEW
     workspace:
-      root_path: /Workspace/Users/${workspace.current_user.userName}/.bundle/${bundle.name}/dev/${var.schema_suffix}
+      root_path: /Workspace/Users/${workspace.current_user.userName}/.bundle/${bundle.name}/dev${var.schema_suffix}
     variables:
       catalog: daiwt_01_mig_dev
-    resources:
-      schemas:
-        bronze:
-          name: ${var.bronze_schema}
-          catalog_name: ${var.catalog}
-          comment: daiwt-01-migration
-        silver:
-          name: ${var.silver_schema}
-          catalog_name: ${var.catalog}
-          comment: daiwt-01-migration
-        gold:
-          name: ${var.gold_schema}
-          catalog_name: ${var.catalog}
-          comment: daiwt-01-migration
+    default: true
+    presets:
+      trigger_pause_status: PAUSED
   prod:
-    mode: production
     permissions:
-      - service_principal_name: ${workspace.current_user.userName}
-        level: CAN_MANAGE
-      - group_name: users
-        level: CAN_VIEW
+    - service_principal_name: ${workspace.current_user.userName}
+      level: CAN_MANAGE
+    - group_name: users
+      level: CAN_VIEW
     workspace:
-      root_path: /Workspace/Users/${workspace.current_user.userName}/.bundle/${bundle.name}/prod
+      root_path: /Workspace/Users/${workspace.current_user.userName}/.bundle/${bundle.name}/prod${var.schema_suffix}
     variables:
       catalog: daiwt_01_mig_prod
-      silver_bad_rows: "false"
-      schema_suffix: prod
-      job_name_prefix: "daiwt_01_"
-      bronze_schema: bronze
-      silver_schema: silver
-      gold_schema: gold
+    mode: production
