@@ -91,6 +91,21 @@ def test_leap_month_and_lower_window_boundary(db):
     ]
 
 
+@pytest.mark.parametrize('sign', [1, -1])
+def test_large_exact_half_cent(db, sign):
+    db.execute('DELETE FROM bronze.fct_daily_balance')
+    db.execute('''
+        INSERT INTO bronze.fct_daily_balance
+        SELECT 1, CAST(d AS DATE),
+               (CASE WHEN day(d) <= 14 THEN 525654.69 ELSE 525654.70 END) * ?, 'A'
+        FROM generate_series(DATE '2025-02-01', DATE '2025-02-28', INTERVAL 1 DAY) dates(d)
+    ''', [sign])
+    execute(db)
+    assert db.execute('SELECT average_balance FROM gold.mart_monthly_balance').fetchone() == (
+        Decimal('525654.70') * sign,
+    )
+
+
 def test_active_filters_and_inclusive_window(db):
     db.execute("UPDATE silver.dim_account SET record_status_cd = 'D' WHERE account_id = 2")
     db.execute("UPDATE bronze.fct_daily_balance SET record_status_cd = 'D' WHERE account_id = 3")

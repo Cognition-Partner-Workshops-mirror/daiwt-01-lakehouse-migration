@@ -2,8 +2,9 @@ CREATE OR REPLACE TABLE IDENTIFIER(:catalog || '.' || :gold_schema || '.mart_mon
 SELECT
     CAST(b.account_id AS INT) AS account_id,
     CAST(trunc(CAST(b.balance_date AS DATE), 'MONTH') AS DATE) AS month_start,
-    -- Make AVG's Databricks decimal result type explicit before HALF_UP cents.
-    CAST(CAST(AVG(CAST(b.balance AS DECIMAL(28,6))) AS DECIMAL(32,10)) AS DECIMAL(18,2)) AS average_balance,
+    -- Two-decimal balances and at most 31 days make six decimals sufficient
+    -- to retain every cent-rounding boundary before the final HALF_UP cast.
+    CAST(CAST(AVG(CAST(b.balance AS DECIMAL(28,6))) AS DECIMAL(32,6)) AS DECIMAL(18,2)) AS average_balance,
     CAST(MAX(CASE
         WHEN CAST(b.balance_date AS DATE) = last_day(CAST(b.balance_date AS DATE))
         THEN CAST(b.balance AS DECIMAL(18,2))
