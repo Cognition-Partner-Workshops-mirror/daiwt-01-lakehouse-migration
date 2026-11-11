@@ -1,0 +1,8 @@
+name: card_category
+layer: gold
+sql:
+  - 01_mart_card_spend_category.sql
+outputs:
+  - table: gold.mart_card_spend_category
+    golden: outputs/D0/card_category/mart_card_spend_category.csv
+    keys: [category]
