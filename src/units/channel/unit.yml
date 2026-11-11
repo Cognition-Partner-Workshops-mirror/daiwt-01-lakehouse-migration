@@ -1,0 +1,9 @@
+name: channel
+layer: gold
+sql:
+  - 01_validate.sql
+  - 02_mart_channel_daily.sql
+outputs:
+  - table: gold.mart_channel_daily
+    golden: outputs/D0/channel/mart_channel_daily.csv
+    keys: [txn_date, channel]
