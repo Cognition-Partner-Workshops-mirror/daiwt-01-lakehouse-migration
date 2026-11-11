@@ -1,9 +1,11 @@
+import csv
 import datetime
 import decimal
 import json
 import os
 from collections import Counter
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 import duckdb
 import sqlglot
@@ -56,6 +58,31 @@ def quoted(name):
     return '"' + name.replace('"', '""') + '"'
 
 
+def load_table(db, table, entry, rows, drop):
+    names = columns(entry)
+    defs = ', '.join(f'{quoted(c)} {column_type(spec, (r[i] for r in rows))}'
+                     for i, (c, spec) in enumerate(zip(names, entry['columns'])))
+    is_input = entry['path'].startswith('inputs/')
+    metadata = ', _drop VARCHAR, _loaded_at TIMESTAMP' if is_input else ''
+    db.execute(f'CREATE TABLE {table} ({defs}{metadata})')
+    if not rows:
+        return
+    with TemporaryDirectory(prefix='migration-ci-') as directory:
+        path = Path(directory) / 'rows.csv'
+        max_line_size = 2 * 1024 * 1024
+        with path.open('w', encoding='utf-8', newline='') as stream:
+            writer = csv.writer(stream)
+            for row in rows:
+                size = writer.writerow([r'\N' if value is None else value for value in row])
+                max_line_size = max(max_line_size, size * 4)
+        metadata = ", ?, TIMESTAMP '2000-01-01'" if is_input else ''
+        parameters = [drop] if is_input else []
+        parameters += [str(path), dict.fromkeys(names, 'VARCHAR'), r'\N', max_line_size]
+        db.execute(f'''INSERT INTO {table} SELECT *{metadata} FROM read_csv(
+            ?, columns=?, header=false, auto_detect=false, nullstr=?, max_line_size=?,
+            delim=',', quote='"', escape='"')''', parameters)
+
+
 def check(root='.', goldens=None, names=None, changed_from=None, structural=False):
     root = Path(root).resolve()
     config = estate(root)
@@ -82,13 +109,7 @@ def check(root='.', goldens=None, names=None, changed_from=None, structural=Fals
                     for table in sorted(unit['references'] - own):
                         entry = by_table[table]
                         rows = read_csv((cache / entry['path']).read_bytes(), entry)
-                        defs = ', '.join(f'{quoted(c)} {column_type(spec, [r[i] for r in rows])}' for i, (c, spec) in enumerate(zip(columns(entry), entry['columns'])))
-                        is_input = entry['path'].startswith('inputs/')
-                        metadata = ', _drop VARCHAR, _loaded_at TIMESTAMP' if is_input else ''
-                        db.execute(f'CREATE TABLE {table} ({defs}{metadata})')
-                        if rows:
-                            values = [r + [drop, datetime.datetime(2000, 1, 1)] for r in rows] if is_input else rows
-                            db.executemany(f'INSERT INTO {table} VALUES ({", ".join("?" for _ in range(len(columns(entry)) + (2 if is_input else 0)))})', values)
+                        load_table(db, table, entry, rows, drop)
                     for file in unit['sql']:
                         for statement in statements((unit['directory'] / file).read_text()):
                             statement = statement.transform(lambda node: exp.Literal.string(drop) if isinstance(node, exp.Placeholder) and node.name == 'drop' else node)

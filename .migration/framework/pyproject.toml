@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "migration-ci"
-version = "1.0.4"
+version = "1.0.6"
 requires-python = ">=3.10"
 dependencies = ["PyYAML>=6,<7", "sqlglot>=26,<29", "duckdb>=1.2,<2", "databricks-sdk>=0.85,<1", "databricks-bundles==1.25.0"]
 
