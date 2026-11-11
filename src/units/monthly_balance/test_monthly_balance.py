@@ -64,6 +64,7 @@ def test_half_up_rounding_month_end_and_restart(db):
 @pytest.mark.parametrize('mutation, message', [
     ("DELETE FROM bronze.fct_daily_balance WHERE balance_date = DATE '2025-06-15'", 'Incomplete'),
     ("DELETE FROM bronze.fct_daily_balance WHERE balance_date = DATE '2025-06-30'", 'Incomplete'),
+    ("UPDATE bronze.fct_daily_balance SET balance_date = DATE '2025-06-14' WHERE balance_date = DATE '2025-06-15'", 'Incomplete'),
     ('DELETE FROM silver.dim_account WHERE account_id = 1', 'Unmatched'),
     ("UPDATE bronze.fct_daily_balance SET balance = NULL WHERE balance_date = DATE '2025-06-30'", 'reconciliation'),
 ])

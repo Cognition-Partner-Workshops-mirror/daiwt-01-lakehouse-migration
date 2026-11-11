@@ -5,6 +5,7 @@ SELECT CASE WHEN EXISTS (
     GROUP BY account_id, CAST(trunc(CAST(balance_date AS DATE), 'MONTH') AS DATE)
     HAVING MAX(CAST(balance_date AS DATE)) <> last_day(month_start)
         OR COUNT(*) <> dayofmonth(last_day(month_start))
+        OR COUNT(DISTINCT CAST(balance_date AS DATE)) <> dayofmonth(last_day(month_start))
 ) THEN CAST('Incomplete daily ledger month' AS INT) ELSE 1 END;
 
 SELECT CASE WHEN EXISTS (
