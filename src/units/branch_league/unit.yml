@@ -1,0 +1,10 @@
+name: branch_league
+layer: gold
+sql:
+  - 01_validate.sql
+  - 02_branch_league.sql
+  - 03_reconcile.sql
+outputs:
+  - table: gold.mart_branch_performance
+    golden: outputs/D0/branch_league/mart_branch_performance.csv
+    keys: [branch_id]
