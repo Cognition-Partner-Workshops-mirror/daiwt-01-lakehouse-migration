@@ -4,6 +4,7 @@ import hashlib
 import io
 import json
 import re
+import sys
 from pathlib import Path
 
 from .model import owned_tables, relative
@@ -109,6 +110,13 @@ def needed(manifest, units, selected, drop):
 def read_csv(data, entry):
     if entry.get('sha256') and hashlib.sha256(data).hexdigest() != entry['sha256']:
         raise ValueError(f"Golden checksum mismatch: {entry['path']}")
+    limit = sys.maxsize
+    while True:
+        try:
+            csv.field_size_limit(limit)
+            break
+        except OverflowError:
+            limit //= 10
     reader = csv.reader(io.StringIO(data.decode('utf-8')))
     if next(reader, None) != columns(entry):
         raise ValueError(f"Golden header mismatch: {entry['path']}")
