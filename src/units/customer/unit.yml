@@ -1,0 +1,8 @@
+name: customer
+layer: silver
+sql:
+  - 01_customer.sql
+outputs:
+  - table: silver.dim_customer
+    golden: outputs/D0/customer/dim_customer.csv
+    keys: [customer_id]
