@@ -69,6 +69,13 @@ def test_empty_initial_delivery(db):
     assert db.execute('SELECT COUNT(*) FROM silver.dim_customer').fetchone() == (0,)
 
 
+def test_timestamp_types_are_timezone_naive(db):
+    feed(db, [('1', 'Alice', '1', 'Oslo', '2025-06-30 00:00:00')])
+    run(db)
+    assert db.execute('SELECT typeof(updated_at), typeof(load_ts) FROM silver.dim_customer').fetchone() == (
+        'TIMESTAMP', 'TIMESTAMP')
+
+
 def test_all_deduplication_tiebreakers(db):
     feed(db, [
         ('1', 'ZZZ', '2', 'ZZZ', '2025-06-29 00:00:00'),

@@ -4,7 +4,7 @@ SELECT
     TRIM(REPLACE(customer_name, CHR(160), ' ')) AS customer_name,
     TRY_CAST(TRIM(branch_id) AS INT) AS branch_id,
     TRIM(REPLACE(town, CHR(160), ' ')) AS town,
-    DATE_TRUNC('SECOND', TRY_CAST(TRIM(updated_at) AS TIMESTAMP)) AS updated_at
+    DATE_TRUNC('SECOND', TRY_CAST(TRIM(updated_at) AS TIMESTAMP_NTZ)) AS updated_at
 FROM IDENTIFIER(:catalog || '.' || :bronze_schema || '.customer_feed');
 
 SELECT CASE WHEN COUNT(*) = 0 THEN 1
@@ -22,9 +22,9 @@ SELECT
     CAST(customer_name AS STRING) AS customer_name,
     CAST(branch_id AS INT) AS branch_id,
     CAST(town AS STRING) AS town,
-    CAST(updated_at AS TIMESTAMP) AS updated_at,
+    CAST(updated_at AS TIMESTAMP_NTZ) AS updated_at,
     CAST(20250630 AS BIGINT) AS batch_id,
-    CAST(TIMESTAMP '2025-06-30 23:00:00' AS TIMESTAMP) AS load_ts,
+    CAST('2025-06-30 23:00:00' AS TIMESTAMP_NTZ) AS load_ts,
     CAST('COREBANK' AS STRING) AS src_system_cd,
     CAST('A' AS STRING) AS record_status_cd,
     CAST(DATE '2024-01-01' AS DATE) AS effective_date,
@@ -54,7 +54,7 @@ WHEN MATCHED THEN UPDATE SET
     town = s.town,
     updated_at = s.updated_at,
     batch_id = CAST(20250630 AS BIGINT),
-    load_ts = TIMESTAMP '2025-06-30 23:00:00'
+    load_ts = CAST('2025-06-30 23:00:00' AS TIMESTAMP_NTZ)
 WHEN NOT MATCHED THEN INSERT (
     customer_id, customer_name, branch_id, town, updated_at, batch_id, load_ts,
     src_system_cd, record_status_cd, effective_date, expiry_date,
@@ -62,7 +62,7 @@ WHEN NOT MATCHED THEN INSERT (
     kyc_status_cd, consent_marketing_ind
 ) VALUES (
     s.customer_id, s.customer_name, s.branch_id, s.town, s.updated_at,
-    CAST(20250630 AS BIGINT), TIMESTAMP '2025-06-30 23:00:00',
+    CAST(20250630 AS BIGINT), CAST('2025-06-30 23:00:00' AS TIMESTAMP_NTZ),
     CAST('COREBANK' AS STRING), CAST('A' AS STRING), DATE '2024-01-01', DATE '9999-12-31',
     CAST('PERSONAL' AS STRING), CAST('NO' AS STRING), CAST('nb' AS STRING),
     CAST('VERIFIED' AS STRING), CAST('N' AS STRING)
