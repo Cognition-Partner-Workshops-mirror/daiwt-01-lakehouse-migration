@@ -8,7 +8,7 @@ SELECT
 FROM IDENTIFIER(:catalog || '.' || :bronze_schema || '.customer_feed');
 
 SELECT CASE WHEN COUNT(*) = 0 THEN 1
-    ELSE raise_error('Invalid customer delivery: identifier, name, timestamp or branch') END
+    ELSE CAST('Invalid customer delivery: identifier, name, timestamp or branch' AS INT) END
 FROM customer_raw AS r
 LEFT JOIN IDENTIFIER(:catalog || '.' || :bronze_schema || '.dim_branch') AS b
     ON r.branch_id = b.branch_id

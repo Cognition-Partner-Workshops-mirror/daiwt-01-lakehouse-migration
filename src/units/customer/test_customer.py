@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+import shutil
 
 import duckdb
 import pytest
@@ -7,23 +8,15 @@ import sqlglot
 
 from migration_ci.goldens import columns, read_csv
 from migration_ci.model import statements
-from migration_ci.offline import compare, load_table
+from migration_ci.offline import check, compare, load_table
 
 
 SQL = Path(__file__).with_name('01_customer.sql').read_text()
 
 
-def register_assertion(connection):
-    def raise_error(message):
-        raise ValueError(message)
-
-    connection.create_function('raise_error', raise_error, ['VARCHAR'], 'INTEGER', side_effects=True)
-
-
 @pytest.fixture
 def db():
     with duckdb.connect() as connection:
-        register_assertion(connection)
         connection.execute('CREATE SCHEMA bronze; CREATE SCHEMA silver')
         connection.execute('CREATE TABLE bronze.dim_branch (branch_id INT)')
         connection.execute('INSERT INTO bronze.dim_branch VALUES (1), (2)')
@@ -118,7 +111,6 @@ def test_d0_golden_parity():
     if len(required) != 3 or any(not (cache / e['path']).exists() for e in required):
         pytest.skip('Customer golden fixtures are not cached')
     with duckdb.connect() as connection:
-        register_assertion(connection)
         connection.execute('CREATE SCHEMA bronze; CREATE SCHEMA silver')
         for table in ('customer_feed', 'dim_branch'):
             entry = next(e for e in manifest['files']
@@ -135,3 +127,37 @@ def test_d0_golden_parity():
         result = compare(expected, actual, entry)
         print(result)
         assert result['status'] == 'PASS'
+
+
+def test_stock_harness_rejects_invalid_row(tmp_path):
+    source = Path(__file__).parent
+    directory = tmp_path / 'src/units/customer'
+    directory.mkdir(parents=True)
+    for name in ('unit.yml', '01_customer.sql'):
+        shutil.copyfile(source / name, directory / name)
+    shutil.copyfile(source.parents[2] / 'estate.yml', tmp_path / 'estate.yml')
+    cache = tmp_path / '.goldens'
+    files = [
+        {'path': 'inputs/D0/customer_feed.csv', 'source_table': 'customer_feed',
+         'columns': ['customer_id', 'customer_name', 'branch_id', 'town', 'updated_at']},
+        {'path': 'inputs/D0/dim_branch.csv', 'source_table': 'dim_branch',
+         'columns': [{'name': 'branch_id', 'type': 'int'}]},
+        {'path': 'outputs/D0/customer/dim_customer.csv', 'table': 'silver.dim_customer',
+         'columns': [{'name': 'customer_id', 'type': 'int'}]},
+    ]
+    data = [
+        'customer_id,customer_name,branch_id,town,updated_at\n'
+        'invalid,Alice,1,Oslo,2025-06-30 00:00:00\n',
+        'branch_id\n1\n',
+        'customer_id\n',
+    ]
+    for entry, text in zip(files, data):
+        path = cache / entry['path']
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text)
+    (cache / 'manifest.json').write_text(json.dumps({'files': files}))
+    result = check(root=tmp_path, goldens=cache, names=['customer'])
+    print(result)
+    assert len(result) == 1
+    assert result[0]['status'] == 'FAIL'
+    assert 'Invalid customer delivery' in result[0]['detail']
