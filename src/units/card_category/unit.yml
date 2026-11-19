@@ -1,0 +1,10 @@
+name: card_category
+layer: gold
+sql:
+  - 01_create_mart.sql
+  - 02_load_category.sql
+  - 03_spend_share.sql
+outputs:
+  - table: gold.mart_card_spend_category
+    golden: outputs/D0/card_category/mart_card_spend_category.csv
+    keys: [category]
