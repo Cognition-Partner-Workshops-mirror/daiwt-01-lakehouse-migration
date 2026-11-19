@@ -1,0 +1,157 @@
+units:
+  - name: customer
+    layer: silver
+    legacy_sources:
+      - legacy/bteq/01_customer.btq
+      - legacy/ddl/nvb_edw.dim_customer.sql
+      - data/column_defaults.json
+      - golden/compute_baselines.py
+    outputs:
+      - table: silver.dim_customer
+        golden: outputs/D0/customer/dim_customer.csv
+        keys: [customer_id]
+    depends_on: []
+    dialect_notes:
+      - "Replace NBSP with space then TRIM names/town; TRYCAST numeric IDs and TIMESTAMP(0); reject invalid IDs, blank names, invalid timestamps or unknown branches before writing. QUALIFY ROW_NUMBER partitions customer_id and orders updated_at, customer_name, town, branch_id DESC; preserve all tie-breakers. MERGE current record, not SCD2."
+      - "D0 parameters: as_of_date=2025-06-30, window_start=2024-01-01, batch_id=20250630. Mirror legacy DDL/data/column_defaults.json explicitly, including all metadata columns; load_ts exists but is excluded from parity. NULL is \\N, not empty string; dates YYYY-MM-DD, timestamps UTC YYYY-MM-DDTHH:MM:SS.000Z, fixed decimal scale ROUND_HALF_UP. Teradata NOT CASESPECIFIC/CHAR comparisons and padding must be considered explicitly (Spark is case-sensitive); do not globally collapse empty strings or change case. Translate ZEROIFNULL/NULLIFZERO to coalesce/nullif; date subtraction uses day arithmetic/date_sub, month windows use add_months. VOLATILE tables become scoped intermediates; PRIMARY INDEX, FALLBACK, COMPRESS and COLLECT STATISTICS are physical hints, not output logic. BTEQ ERRORCODE/ACTIVITYCOUNT and procedure SIGNAL/handlers become fail-fast assertions. Only close_batch owns etl_batch_control; other units must not reproduce shared control-table writes."
+  - name: transactions
+    layer: silver
+    legacy_sources:
+      - legacy/bteq/02_transactions.btq
+      - legacy/ddl/nvb_edw.fct_transaction.sql
+      - data/column_defaults.json
+      - golden/compute_baselines.py
+    outputs:
+      - table: silver.fct_transaction
+        golden: outputs/D0/transactions/fct_transaction.csv
+        keys: [transaction_id]
+    depends_on: []
+    dialect_notes:
+      - "Parse comma decimals with replace and try_cast DECIMAL(18,2). Channel = coalesce(nullif(upper(trim(channel)), ''), 'ONLINE'). Reject duplicate/invalid transaction IDs, invalid dates/amounts, unknown accounts/merchants and channels outside CARD/MOBILE/BRANCH/ONLINE. Validate account FK against landed bronze.dim_account, not dormant's output, to avoid a dependency cycle. Atomically replace inclusive 2024-01-01..2025-06-30 window; BT/ET and ABORT are transaction controls."
+      - "D0 parameters: as_of_date=2025-06-30, window_start=2024-01-01, batch_id=20250630. Mirror legacy DDL/data/column_defaults.json explicitly, including all metadata columns; load_ts exists but is excluded from parity. NULL is \\N, not empty string; dates YYYY-MM-DD, timestamps UTC YYYY-MM-DDTHH:MM:SS.000Z, fixed decimal scale ROUND_HALF_UP. Teradata NOT CASESPECIFIC/CHAR comparisons and padding must be considered explicitly (Spark is case-sensitive); do not globally collapse empty strings or change case. Translate ZEROIFNULL/NULLIFZERO to coalesce/nullif; date subtraction uses day arithmetic/date_sub, month windows use add_months. VOLATILE tables become scoped intermediates; PRIMARY INDEX, FALLBACK, COMPRESS and COLLECT STATISTICS are physical hints, not output logic. BTEQ ERRORCODE/ACTIVITYCOUNT and procedure SIGNAL/handlers become fail-fast assertions. Only close_batch owns etl_batch_control; other units must not reproduce shared control-table writes."
+  - name: dormant
+    layer: silver
+    legacy_sources:
+      - legacy/bteq/03_dormant.btq
+      - legacy/procs/flag_dormant.sql
+      - legacy/ddl/nvb_edw.dim_account.sql
+      - data/column_defaults.json
+      - golden/compute_baselines.py
+    outputs:
+      - table: silver.dim_account
+        golden: outputs/D0/dormant/dim_account.csv
+        keys: [account_id]
+    depends_on: [customer, transactions]
+    dialect_notes:
+      - "Start from landed bronze.dim_account. Reset active accounts to N, then set Y only for active accounts whose customer belongs to an active branch and whose account_id is NOT IN active transactions with txn_date > add_months(as_of_date,-6) AND txn_date <= as_of_date. Preserve NOT IN NULL semantics and inactive account values. D0 cutoff is strictly > 2024-12-30; do not substitute 180 days. Reject missing customers and preserve post-write reconciliation."
+      - "D0 parameters: as_of_date=2025-06-30, window_start=2024-01-01, batch_id=20250630. Mirror legacy DDL/data/column_defaults.json explicitly, including all metadata columns; load_ts exists but is excluded from parity. NULL is \\N, not empty string; dates YYYY-MM-DD, timestamps UTC YYYY-MM-DDTHH:MM:SS.000Z, fixed decimal scale ROUND_HALF_UP. Teradata NOT CASESPECIFIC/CHAR comparisons and padding must be considered explicitly (Spark is case-sensitive); do not globally collapse empty strings or change case. Translate ZEROIFNULL/NULLIFZERO to coalesce/nullif; date subtraction uses day arithmetic/date_sub, month windows use add_months. VOLATILE tables become scoped intermediates; PRIMARY INDEX, FALLBACK, COMPRESS and COLLECT STATISTICS are physical hints, not output logic. BTEQ ERRORCODE/ACTIVITYCOUNT and procedure SIGNAL/handlers become fail-fast assertions. Only close_batch owns etl_batch_control; other units must not reproduce shared control-table writes."
+  - name: monthly_balance
+    layer: gold
+    legacy_sources:
+      - legacy/bteq/04_monthly_balance.btq
+      - legacy/macros/monthly_balance.sql
+      - legacy/ddl/nvb_mart.mart_monthly_balance.sql
+      - data/column_defaults.json
+      - golden/compute_baselines.py
+    outputs:
+      - table: gold.mart_monthly_balance
+        golden: outputs/D0/monthly_balance/mart_monthly_balance.csv
+        keys: [account_id, month_start]
+    depends_on: [dormant]
+    dialect_notes:
+      - "Read landed daily balances and active silver.dim_account. Require complete account-month ledgers including month-end. TRUNC(date,'MONTH') becomes month truncation as DATE; ADD_MONTHS(month_start,1)-1 is last_day. Average CAST(balance AS DECIMAL(28,6)) then cast DECIMAL(18,2), HALF_UP, not bround. Closing balance is MAX(CASE WHEN balance_date = last_day(balance_date) THEN balance END), not arbitrary last row. Rebuild inclusive month window."
+      - "D0 parameters: as_of_date=2025-06-30, window_start=2024-01-01, batch_id=20250630. Mirror legacy DDL/data/column_defaults.json explicitly, including all metadata columns; load_ts exists but is excluded from parity. NULL is \\N, not empty string; dates YYYY-MM-DD, timestamps UTC YYYY-MM-DDTHH:MM:SS.000Z, fixed decimal scale ROUND_HALF_UP. Teradata NOT CASESPECIFIC/CHAR comparisons and padding must be considered explicitly (Spark is case-sensitive); do not globally collapse empty strings or change case. Translate ZEROIFNULL/NULLIFZERO to coalesce/nullif; date subtraction uses day arithmetic/date_sub, month windows use add_months. VOLATILE tables become scoped intermediates; PRIMARY INDEX, FALLBACK, COMPRESS and COLLECT STATISTICS are physical hints, not output logic. BTEQ ERRORCODE/ACTIVITYCOUNT and procedure SIGNAL/handlers become fail-fast assertions. Only close_batch owns etl_batch_control; other units must not reproduce shared control-table writes."
+  - name: customer_segment
+    layer: gold
+    legacy_sources:
+      - legacy/bteq/05_customer_segment.btq
+      - legacy/procs/customer_segment.sql
+      - legacy/ddl/nvb_mart.mart_customer_segment.sql
+      - data/column_defaults.json
+      - golden/compute_baselines.py
+    outputs:
+      - table: gold.mart_customer_segment
+        golden: outputs/D0/customer_segment/mart_customer_segment.csv
+        keys: [customer_id]
+    depends_on: [customer, transactions, dormant]
+    dialect_notes:
+      - "Retain LEFT JOIN predicates in ON to preserve customers with no payments; active customers/accounts/payments only. Inclusive trailing window add_months(as_of_date,-12)+1 through as_of_date. COUNT(transaction_id), not COUNT(*); debit spend = coalesce(sum(CASE WHEN amount<0 THEN -amount ELSE 0 END),0). First-match CASE: last date NULL or < as_of_date-90 => DORMANT; count>=50 and spend>=20000 => PREMIUM; count>=20 => ACTIVE; otherwise OCCASIONAL. Require full active-customer coverage."
+      - "D0 parameters: as_of_date=2025-06-30, window_start=2024-01-01, batch_id=20250630. Mirror legacy DDL/data/column_defaults.json explicitly, including all metadata columns; load_ts exists but is excluded from parity. NULL is \\N, not empty string; dates YYYY-MM-DD, timestamps UTC YYYY-MM-DDTHH:MM:SS.000Z, fixed decimal scale ROUND_HALF_UP. Teradata NOT CASESPECIFIC/CHAR comparisons and padding must be considered explicitly (Spark is case-sensitive); do not globally collapse empty strings or change case. Translate ZEROIFNULL/NULLIFZERO to coalesce/nullif; date subtraction uses day arithmetic/date_sub, month windows use add_months. VOLATILE tables become scoped intermediates; PRIMARY INDEX, FALLBACK, COMPRESS and COLLECT STATISTICS are physical hints, not output logic. BTEQ ERRORCODE/ACTIVITYCOUNT and procedure SIGNAL/handlers become fail-fast assertions. Only close_batch owns etl_batch_control; other units must not reproduce shared control-table writes."
+  - name: branch_league
+    layer: gold
+    legacy_sources:
+      - legacy/bteq/06_branch_league.btq
+      - legacy/procs/branch_league.sql
+      - legacy/ddl/nvb_mart.mart_branch_performance.sql
+      - data/column_defaults.json
+      - golden/compute_baselines.py
+    outputs:
+      - table: gold.mart_branch_performance
+        golden: outputs/D0/branch_league/mart_branch_performance.csv
+        keys: [branch_id]
+    depends_on: [customer, transactions, dormant]
+    dialect_notes:
+      - "Retain customer LEFT JOINs; active accounts/payments, inclusive retained date window in ON. COUNT(DISTINCT customer_id), signed coalesce(sum(amount),0), and RANK descending net (ties share rank), not row_number. Require one row per active customer branch and reconcile branch customer counts against BTEQ controls."
+      - "D0 parameters: as_of_date=2025-06-30, window_start=2024-01-01, batch_id=20250630. Mirror legacy DDL/data/column_defaults.json explicitly, including all metadata columns; load_ts exists but is excluded from parity. NULL is \\N, not empty string; dates YYYY-MM-DD, timestamps UTC YYYY-MM-DDTHH:MM:SS.000Z, fixed decimal scale ROUND_HALF_UP. Teradata NOT CASESPECIFIC/CHAR comparisons and padding must be considered explicitly (Spark is case-sensitive); do not globally collapse empty strings or change case. Translate ZEROIFNULL/NULLIFZERO to coalesce/nullif; date subtraction uses day arithmetic/date_sub, month windows use add_months. VOLATILE tables become scoped intermediates; PRIMARY INDEX, FALLBACK, COMPRESS and COLLECT STATISTICS are physical hints, not output logic. BTEQ ERRORCODE/ACTIVITYCOUNT and procedure SIGNAL/handlers become fail-fast assertions. Only close_batch owns etl_batch_control; other units must not reproduce shared control-table writes."
+  - name: product_profitability
+    layer: gold
+    legacy_sources:
+      - legacy/bteq/07_product_profitability.btq
+      - legacy/ddl/nvb_mart.mart_product_profitability.sql
+      - data/column_defaults.json
+      - golden/compute_baselines.py
+    outputs:
+      - table: gold.mart_product_profitability
+        golden: outputs/D0/product_profitability/mart_product_profitability.csv
+        keys: [product_id]
+    depends_on: [dormant]
+    dialect_notes:
+      - "Join landed daily balances/product to active silver.dim_account; active balances within inclusive retained window. One AVG(CAST(balance AS DECIMAL(28,6))) over all account-days per product, not average of account means. Annual rate = MAX(product.annual_rate). annual_income = CAST(unrounded_mean * annual_rate / 100 AS DECIMAL(18,2)); ensure decimal division, never integer truncation. Round average_balance separately HALF_UP. Reject NULL/negative rates and NULL means."
+      - "D0 parameters: as_of_date=2025-06-30, window_start=2024-01-01, batch_id=20250630. Mirror legacy DDL/data/column_defaults.json explicitly, including all metadata columns; load_ts exists but is excluded from parity. NULL is \\N, not empty string; dates YYYY-MM-DD, timestamps UTC YYYY-MM-DDTHH:MM:SS.000Z, fixed decimal scale ROUND_HALF_UP. Teradata NOT CASESPECIFIC/CHAR comparisons and padding must be considered explicitly (Spark is case-sensitive); do not globally collapse empty strings or change case. Translate ZEROIFNULL/NULLIFZERO to coalesce/nullif; date subtraction uses day arithmetic/date_sub, month windows use add_months. VOLATILE tables become scoped intermediates; PRIMARY INDEX, FALLBACK, COMPRESS and COLLECT STATISTICS are physical hints, not output logic. BTEQ ERRORCODE/ACTIVITYCOUNT and procedure SIGNAL/handlers become fail-fast assertions. Only close_batch owns etl_batch_control; other units must not reproduce shared control-table writes."
+  - name: channel
+    layer: gold
+    legacy_sources:
+      - legacy/bteq/08_channel.btq
+      - legacy/macros/channel_daily.sql
+      - legacy/ddl/nvb_mart.mart_channel_daily.sql
+      - data/column_defaults.json
+      - golden/compute_baselines.py
+    outputs:
+      - table: gold.mart_channel_daily
+        golden: outputs/D0/channel/mart_channel_daily.csv
+        keys: [txn_date, channel]
+    depends_on: [transactions]
+    dialect_notes:
+      - "Join active payments to landed bronze.dim_calendar; reject missing calendar dates. Group txn_date and coalesce(nullif(trim(channel),''),'ONLINE') (no extra UPPER). COUNT(*) and coalesce(SUM(amount),0). Replace inclusive date window; reconcile date/channel counts and signed amounts."
+      - "D0 parameters: as_of_date=2025-06-30, window_start=2024-01-01, batch_id=20250630. Mirror legacy DDL/data/column_defaults.json explicitly, including all metadata columns; load_ts exists but is excluded from parity. NULL is \\N, not empty string; dates YYYY-MM-DD, timestamps UTC YYYY-MM-DDTHH:MM:SS.000Z, fixed decimal scale ROUND_HALF_UP. Teradata NOT CASESPECIFIC/CHAR comparisons and padding must be considered explicitly (Spark is case-sensitive); do not globally collapse empty strings or change case. Translate ZEROIFNULL/NULLIFZERO to coalesce/nullif; date subtraction uses day arithmetic/date_sub, month windows use add_months. VOLATILE tables become scoped intermediates; PRIMARY INDEX, FALLBACK, COMPRESS and COLLECT STATISTICS are physical hints, not output logic. BTEQ ERRORCODE/ACTIVITYCOUNT and procedure SIGNAL/handlers become fail-fast assertions. Only close_batch owns etl_batch_control; other units must not reproduce shared control-table writes."
+  - name: card_category
+    layer: gold
+    legacy_sources:
+      - legacy/bteq/09_card_category.btq
+      - legacy/macros/card_category.sql
+      - legacy/ddl/nvb_mart.mart_card_spend_category.sql
+      - data/column_defaults.json
+      - golden/compute_baselines.py
+    outputs:
+      - table: gold.mart_card_spend_category
+        golden: outputs/D0/card_category/mart_card_spend_category.csv
+        keys: [category]
+    depends_on: [transactions]
+    dialect_notes:
+      - "INNER JOIN active landed bronze.dim_merchant to active transactions, inclusive window, channel CARD and amount<0. Group coalesce(category,'UNCLASSIFIED'), COUNT(transaction_id), SUM(-amount). No dim_card join. Preserve BTEQ category/spend/count controls; batch-scoped replacement. NULLIFZERO in diagnostic share calculation means nullif(total_spend,0); keep decimal division."
+      - "D0 parameters: as_of_date=2025-06-30, window_start=2024-01-01, batch_id=20250630. Mirror legacy DDL/data/column_defaults.json explicitly, including all metadata columns; load_ts exists but is excluded from parity. NULL is \\N, not empty string; dates YYYY-MM-DD, timestamps UTC YYYY-MM-DDTHH:MM:SS.000Z, fixed decimal scale ROUND_HALF_UP. Teradata NOT CASESPECIFIC/CHAR comparisons and padding must be considered explicitly (Spark is case-sensitive); do not globally collapse empty strings or change case. Translate ZEROIFNULL/NULLIFZERO to coalesce/nullif; date subtraction uses day arithmetic/date_sub, month windows use add_months. VOLATILE tables become scoped intermediates; PRIMARY INDEX, FALLBACK, COMPRESS and COLLECT STATISTICS are physical hints, not output logic. BTEQ ERRORCODE/ACTIVITYCOUNT and procedure SIGNAL/handlers become fail-fast assertions. Only close_batch owns etl_batch_control; other units must not reproduce shared control-table writes."
+  - name: close_batch
+    layer: silver
+    legacy_sources:
+      - legacy/bteq/10_close_batch.btq
+      - legacy/ddl/nvb_edw.etl_batch_control.sql
+      - data/column_defaults.json
+      - golden/compute_baselines.py
+    outputs:
+      - table: silver.etl_batch_control
+        golden: outputs/D0/close_batch/etl_batch_control.csv
+        keys: [batch_date, job_name]
+    depends_on: [transactions, channel]
+    dialect_notes:
+      - "Final release gate: compare fact COUNT(*) and SUM(amount) to channel SUM(txn_count) and SUM(net_amount); reject mismatches or empty mart. Materialize one NIGHTLY row at 2025-06-30, status COMPLETE, last_step_cd 10_close_batch, row_count=fact count. Must work from an empty output, not rely on BTEQ header side effects. Offline parity seeds the referenced non-owned gold.mart_channel_daily from outputs/D0/channel/mart_channel_daily.csv, so this unit can build in the Silver wave; runtime SQL references establish dependencies on transactions and channel."
+      - "D0 parameters: as_of_date=2025-06-30, window_start=2024-01-01, batch_id=20250630. Mirror legacy DDL/data/column_defaults.json explicitly, including all metadata columns; load_ts exists but is excluded from parity. NULL is \\N, not empty string; dates YYYY-MM-DD, timestamps UTC YYYY-MM-DDTHH:MM:SS.000Z, fixed decimal scale ROUND_HALF_UP. Teradata NOT CASESPECIFIC/CHAR comparisons and padding must be considered explicitly (Spark is case-sensitive); do not globally collapse empty strings or change case. Translate ZEROIFNULL/NULLIFZERO to coalesce/nullif; date subtraction uses day arithmetic/date_sub, month windows use add_months. VOLATILE tables become scoped intermediates; PRIMARY INDEX, FALLBACK, COMPRESS and COLLECT STATISTICS are physical hints, not output logic. BTEQ ERRORCODE/ACTIVITYCOUNT and procedure SIGNAL/handlers become fail-fast assertions. Only close_batch owns etl_batch_control; other units must not reproduce shared control-table writes."
