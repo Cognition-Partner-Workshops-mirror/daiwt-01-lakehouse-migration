@@ -1,0 +1,8 @@
+name: close_batch
+layer: silver
+sql:
+  - etl_batch_control.sql
+outputs:
+  - table: silver.etl_batch_control
+    golden: outputs/D0/close_batch/etl_batch_control.csv
+    keys: [batch_date, job_name]
