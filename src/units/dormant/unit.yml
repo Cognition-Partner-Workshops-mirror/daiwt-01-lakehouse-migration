@@ -1,0 +1,10 @@
+name: dormant
+layer: silver
+sql:
+  - 01_validate.sql
+  - 02_dim_account.sql
+  - 03_reconcile.sql
+outputs:
+  - table: silver.dim_account
+    golden: outputs/D0/dormant/dim_account.csv
+    keys: [account_id]
